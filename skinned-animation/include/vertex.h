@@ -1,0 +1,24 @@
+//
+//  vertex.h
+//  skinned-animation
+//
+//  Created by tigertang on 2018/8/2.
+//  Copyright © 2018 tigertang. All rights reserved.
+//
+
+#pragma once
+
+#include <glm/glm.hpp>
+
+constexpr int kMaxBonesPerVertex = 4;
+
+struct Vertex {
+//public:
+    glm::vec3 position;
+    glm::vec2 tex_coord;
+    glm::vec3 normal;
+//    int bone_ids[kMaxBonesPerVertex];
+//    double bone_weights[kMaxBonesPerVertex];
+    
+//    Vertex();
+};

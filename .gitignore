@@ -1,0 +1,5 @@
+.DS_Store
+bin/*
+lib/*
+build/*
+!build/premake4.lua
