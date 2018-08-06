@@ -17,13 +17,11 @@
 using namespace glm;
 using namespace boost;
 
-Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene) {
+Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer) {
     static std::vector<Vertex> vertices;
     static std::vector<uint32_t> indices;
     vertices.clear();
     indices.clear();
-    
-    static float max_depth = 0;
     
     auto path = directory_path;
     {
@@ -37,20 +35,28 @@ Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene) 
         path /= item;
     }
     texture_id_ = TextureManager::LoadTexture(path);
+    
     for (int i = 0; i < mesh->mNumVertices; i++) {
         auto vertex = Vertex();
         vertex.position = vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
         vertex.tex_coord = vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
         vertex.normal = vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
         vertices.push_back(vertex);
-        
-        max_depth = max(max_depth, vertex.position.z);
     }
     for (int i = 0; i < mesh->mNumFaces; i++) {
         auto face = mesh->mFaces[i];
         for (int j = 0; j < face.mNumIndices; j++) indices.push_back(face.mIndices[j]);
     }
     indices_size_ = (uint32_t) indices.size();
+    
+    for (int i = 0; i < mesh->mNumBones; i++) {
+        auto bone = mesh->mBones[i];
+        auto id = bone_namer.Name(bone->mName.C_Str());
+        for (int j = 0; j < bone->mNumWeights; j++) {
+            auto weight = bone->mWeights[j];
+            vertices[weight.mVertexId].AddBone(id, weight.mWeight);
+        }
+    }
         
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
@@ -71,24 +77,32 @@ Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene) 
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(Vertex), (void *) offsetof(Vertex, normal));
     
+    glEnableVertexAttribArray(3);
+    glVertexAttribIPointer(3, 4, GL_INT, sizeof(Vertex), (void *) (offsetof(Vertex, bone_ids) + 0 * sizeof(int)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(4, 4, GL_INT, sizeof(Vertex), (void *) (offsetof(Vertex, bone_ids) + 4 * sizeof(int)));
+    
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, false, sizeof(Vertex), (void *) (offsetof(Vertex, bone_weights) + 0 * sizeof(float)));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 4, GL_FLOAT, false, sizeof(Vertex), (void *) (offsetof(Vertex, bone_weights) + 4 * sizeof(float)));
+    
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 Mesh::~Mesh() {
-//    glDeleteVertexArrays(1, &vao_);
-//    glDeleteBuffers(1, &vbo_);
-//    glDeleteBuffers(1, &ebo_);
-//    glDeleteTextures(1, &texture_id_);
+    glDeleteVertexArrays(1, &vao_);
+    glDeleteBuffers(1, &vbo_);
+    glDeleteBuffers(1, &ebo_);
+    glDeleteTextures(1, &texture_id_);
 }
 
-void Mesh::Draw(std::weak_ptr<Camera> camera_ptr, std::weak_ptr<Shader> shader_ptr) const {
-    auto shader_shared_ptr = shader_ptr.lock();
-    
+void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    shader_shared_ptr->SetUniform<int32_t>("uDiffuseTexture", 0);
+    shader_ptr.lock()->SetUniform<int32_t>("uDiffuseTexture", 0);
     
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, 0);

@@ -51,6 +51,12 @@ private:
     std::string error_message;
 };
 
+class MaxBoneExceededError: public std::exception {
+public:
+    MaxBoneExceededError();
+    const char *what() const noexcept;
+};
+
 class ShaderSettingError: public std::exception {
 public:
     ShaderSettingError() = delete;

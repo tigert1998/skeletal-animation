@@ -49,3 +49,9 @@ ShaderSettingError::ShaderSettingError(const string &name) {
 const char *ShaderSettingError::what() const noexcept {
     return error_message.c_str();
 }
+
+MaxBoneExceededError::MaxBoneExceededError() = default;
+
+const char *MaxBoneExceededError::what() const noexcept {
+    return "[max bone exceeded error]";
+}

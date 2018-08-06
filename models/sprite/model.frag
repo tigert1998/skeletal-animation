@@ -11,5 +11,5 @@ uniform sampler2D uDiffuseTexture;
 out vec4 fragColor;
 
 void main() {
-    fragColor = texture(uDiffuseTexture, vTexCoord);
+    fragColor = vec4(texture(uDiffuseTexture, vTexCoord).rgb, 1);
 }
