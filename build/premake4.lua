@@ -1,11 +1,11 @@
-solution "skinned-animation"
+solution "skeletal-animation"
 configurations { "Debug", "Release" }
 configuration "Debug"
     targetdir "../bin/Debug"
 configuration "Release"
     targetdir "../bin/Release"
 
-project "skinned-animation"
+project "skeletal-animation"
     kind "ConsoleApp"
     language "C++"
     linkoptions {
