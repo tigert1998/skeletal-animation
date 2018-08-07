@@ -17,7 +17,13 @@
 using namespace glm;
 using namespace boost;
 
-Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer) {
+Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer, std::vector<glm::mat4> &bone_offsets) {
+    auto mat4_from_aimatrix4x4 = [] (aiMatrix4x4 matrix) -> mat4 {
+        mat4 res;
+        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) res[j][i] = matrix[i][j];
+        return res;
+    };
+    
     static std::vector<Vertex> vertices;
     static std::vector<uint32_t> indices;
     vertices.clear();
@@ -52,6 +58,10 @@ Mesh::Mesh(filesystem::path directory_path, aiMesh *mesh, const aiScene *scene, 
     for (int i = 0; i < mesh->mNumBones; i++) {
         auto bone = mesh->mBones[i];
         auto id = bone_namer.Name(bone->mName.C_Str());
+        
+        bone_offsets.resize(std::max(id + 1, (uint32_t) bone_offsets.size()));
+        bone_offsets[id] = mat4_from_aimatrix4x4(bone->mOffsetMatrix);
+        
         for (int j = 0; j < bone->mNumWeights; j++) {
             auto weight = bone->mWeights[j];
             vertices[weight.mVertexId].AddBone(id, weight.mWeight);

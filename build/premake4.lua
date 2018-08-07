@@ -20,4 +20,4 @@ project "skinned-animation"
     buildoptions { "-std=c++14" }
 
     includedirs { "../prerequisite", "/usr/local/include" }
-    files { "../skinned-animation/**.h", "../skinned-animation/**.cpp" }
+    files { "../skeletal-animation/**.h", "../skeletal-animation/**.cpp" }

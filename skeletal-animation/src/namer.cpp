@@ -25,3 +25,7 @@ uint32_t Namer::Name(const std::string &name) {
 uint32_t Namer::total() const {
     return total_;
 }
+
+std::map<std::string, uint32_t> &Namer::map() {
+    return map_;
+}

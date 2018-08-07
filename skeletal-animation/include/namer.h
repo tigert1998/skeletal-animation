@@ -15,6 +15,7 @@ public:
     Namer();
     uint32_t Name(const std::string &name);
     uint32_t total() const;
+    std::map<std::string, uint32_t> &map();
     void Clear();
     
 private:

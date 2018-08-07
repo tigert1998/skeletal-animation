@@ -50,7 +50,7 @@ void Init() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     
-    window = glfwCreateWindow(width, height, "Skinned Animation", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, "Skeletal Animation", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
     
@@ -62,25 +62,32 @@ void Init() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     sprite_model_ptr = make_shared<SpriteModel>("../../models/sprite/sprite.fbx");
-    camera_ptr = make_shared<Camera>(vec3(0, 18, 30), static_cast<double>(width) / height);
+    camera_ptr = make_shared<Camera>(vec3(0, 16, 56), static_cast<double>(width) / height);
     Keyboard::shared.Register([] (Keyboard::KeyboardState state, double time) {
+        double move_ratio = 7;
         if (state[GLFW_KEY_W] || state[GLFW_KEY_UP]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kForward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kForward, time * move_ratio);
         }
         if (state[GLFW_KEY_S] || state[GLFW_KEY_DOWN]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kBackward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kBackward, time * move_ratio);
         }
         if (state[GLFW_KEY_A] || state[GLFW_KEY_LEFT]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kLeftward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kLeftward, time * move_ratio);
         }
         if (state[GLFW_KEY_D] || state[GLFW_KEY_RIGHT]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kRightward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kRightward, time * move_ratio);
         }
         if (state[GLFW_KEY_J]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kDownward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kDownward, time * move_ratio);
         }
         if (state[GLFW_KEY_K]) {
-            camera_ptr->Move(Camera::MoveDirectionType::kUpward, time);
+            camera_ptr->Move(Camera::MoveDirectionType::kUpward, time * move_ratio);
+        }
+        if (state[GLFW_KEY_H]) {
+            camera_ptr->Rotate(-time, 0);
+        }
+        if (state[GLFW_KEY_L]) {
+            camera_ptr->Rotate(time, 0);
         }
     });
 }
@@ -99,7 +106,7 @@ int main() {
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        sprite_model_ptr->Draw(camera_ptr);
+        sprite_model_ptr->Draw(0, camera_ptr, current_time);
         
         glfwSwapBuffers(window);
     }
