@@ -15,9 +15,10 @@ project "skeletal-animation"
         "-lboost_filesystem",
         "-lglfw",
         "-lassimp",
-        "-lglad"
+        "-lglad",
+        "-ldl",
     }
     buildoptions { "-std=c++14" }
 
-    includedirs { "../prerequisite", "/usr/local/include" }
+    includedirs { "../prerequisite", "/usr/local/include", "../skeletal-animation/include" }
     files { "../skeletal-animation/**.h", "../skeletal-animation/**.cpp" }
