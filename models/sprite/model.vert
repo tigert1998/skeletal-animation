@@ -1,4 +1,4 @@
-#version 400 core
+#version 410 core
 
 const int MAX_BONES = 100;
 

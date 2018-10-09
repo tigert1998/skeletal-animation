@@ -54,11 +54,15 @@ uint32_t Shader::Compile(uint32_t type, const std::string &source, boost::filesy
 
 uint32_t Shader::Link(uint32_t vs_id, uint32_t fs_id) {
     uint32_t program_id = glCreateProgram();
+
     glAttachShader(program_id, vs_id);
     glAttachShader(program_id, fs_id);
+
     glLinkProgram(program_id);
+
     glDeleteShader(vs_id);
     glDeleteShader(fs_id);
+
     int success;
     glGetProgramiv(program_id, GL_LINK_STATUS, &success);
     if (success) return program_id;

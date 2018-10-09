@@ -28,7 +28,7 @@ using namespace glm;
 SpriteModel::SpriteModel(boost::filesystem::path path): directory_path_(path.parent_path()) {
     scene_ = aiImportFile(path.c_str(), aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);
     shader_ptr_ = shared_ptr<Shader>(new Shader(directory_path_ / "model.vert", directory_path_ / "model.frag"));
-    
+
     animation_channel_map_.clear();
     for (int i = 0; i < scene_->mNumAnimations; i++) {
         auto animation = scene_->mAnimations[i];
