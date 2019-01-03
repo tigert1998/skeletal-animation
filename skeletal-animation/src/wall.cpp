@@ -19,7 +19,7 @@ using namespace glm;
 
 Wall::Wall() {
     string vs_source =
-        "#version 400 core\n"
+        "#version 410 core\n"
         "layout (location = 0) in vec3 aPosition;\n"
         "layout (location = 1) in vec2 aTexCoord;\n"
         "uniform mat4 uModelMatrix;\n"
@@ -31,7 +31,7 @@ Wall::Wall() {
         "   vTexCoord = aTexCoord;\n"
         "}\n";
     string fs_source =
-        "#version 400 core\n"
+        "#version 410 core\n"
         "out vec4 fragColor;\n"
         "in vec2 vTexCoord;\n"
         "void main() {\n"

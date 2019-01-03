@@ -115,6 +115,6 @@ void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
     shader_ptr.lock()->SetUniform<int32_t>("uDiffuseTexture", 0);
     
     glBindVertexArray(vao_);
-    glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, indices_size_);
     glBindVertexArray(0);
 }
