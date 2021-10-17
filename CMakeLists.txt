@@ -37,6 +37,7 @@ set(imgui_srcs
     "${imgui_dir}/imgui_widgets.cpp"
     "${imgui_dir}/imgui.cpp"
     "${imgui_dir}/backends/imgui_impl_glfw.cpp"
+    "${imgui_dir}/backends/imgui_impl_opengl3.cpp"
 )
 add_library(imgui STATIC "${imgui_srcs}")
 target_link_libraries(imgui glfw)
