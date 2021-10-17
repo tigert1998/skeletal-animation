@@ -11,10 +11,11 @@
 #endif
 
 #include <map>
+#include <vector>
 #include <string>
 #include <glad/glad.h>
 
-#include "stb/stb_image.h"
+#include "stb_image.h"
 
 #include "texture_manager.h"
 #include "cg_exception.h"
@@ -23,7 +24,7 @@ using std::map;
 using std::string;
 using std::vector;
 
-uint32_t TextureManager::LoadTexture(boost::filesystem::path path) {
+uint32_t TextureManager::LoadTexture(const std::string &path) {
     uint32_t texture;
     static map<string, uint32_t> memory;
     if (memory.count(path.c_str())) return memory[path.c_str()];
@@ -40,7 +41,7 @@ uint32_t TextureManager::LoadTexture(boost::filesystem::path path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
-    vector<float> border_color = {0.0, 0.0, 0.0, 0.0};
+    vector<float> border_color(4);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color.data());
     
     if(comp == 3)

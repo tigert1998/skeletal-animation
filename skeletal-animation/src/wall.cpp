@@ -37,7 +37,7 @@ Wall::Wall() {
         "void main() {\n"
         "   fragColor = vec4(vTexCoord, 0, 1);\n"
         "}\n";
-    shader_ptr_ = std::make_shared<Shader>(vs_source, fs_source);
+    shader_ptr_ = std::make_shared<Shader>(Shader::SRC, vs_source, fs_source);
     
     vector<float> vertices = {
         -1, -1, 0, 0, 0,

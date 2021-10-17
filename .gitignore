@@ -1,5 +1,3 @@
 .DS_Store
-bin/*
-lib/*
-build/*
-!build/premake4.lua
+build
+third_party/glad

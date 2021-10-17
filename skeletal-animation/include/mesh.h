@@ -11,8 +11,6 @@
 #include <vector>
 #include <memory>
 
-#include <boost/filesystem.hpp>
-
 #include <assimp/scene.h>
 
 #include "vertex.h"
@@ -21,7 +19,7 @@
 
 class Mesh {
 public:
-    Mesh(boost::filesystem::path directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer, std::vector<glm::mat4> &bone_offsets);
+    Mesh(const std::string &directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer, std::vector<glm::mat4> &bone_offsets);
     ~Mesh();
     void Draw(std::weak_ptr<Shader> shader_ptr) const;
     

@@ -9,8 +9,6 @@
 #include <memory>
 #include <iostream>
 
-#include <boost/format.hpp>
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -22,7 +20,6 @@ uint32_t width = 1000, height = 600;
 
 using namespace glm;
 using namespace std;
-using namespace boost;
 
 std::shared_ptr<SpriteModel> sprite_model_ptr;
 std::shared_ptr<Camera> camera_ptr;
@@ -61,7 +58,7 @@ void Init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    sprite_model_ptr = make_shared<SpriteModel>("../../models/sprite/sprite.fbx");
+    sprite_model_ptr = make_shared<SpriteModel>("models/sprite/sprite.fbx");
     camera_ptr = make_shared<Camera>(vec3(0, 16, 56), static_cast<double>(width) / height);
     Keyboard::shared.Register([] (Keyboard::KeyboardState state, double time) {
         double move_ratio = 7;

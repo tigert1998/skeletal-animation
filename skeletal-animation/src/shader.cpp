@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -16,26 +17,26 @@
 #include "shader.h"
 #include "cg_exception.h"
 
-Shader::Shader(boost::filesystem::path vs_path, boost::filesystem::path fs_path) {
-    auto ReadFileAt = [] (boost::filesystem::path path) -> std::string {
-        std::ifstream ifs(path.c_str());
-        std::string res((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-        return res;
-    };
-    auto vs_source = ReadFileAt(vs_path);
-    auto fs_source = ReadFileAt(fs_path);
-    auto vs_id = Compile(GL_VERTEX_SHADER, vs_source, vs_path);
-    auto fs_id = Compile(GL_FRAGMENT_SHADER, fs_source, fs_path);
-    id = Link(vs_id, fs_id);
+Shader::Shader(uint32_t type, const std::string &vs, const std::string &fs) {
+    if (type == Shader::PATH) {
+        auto ReadFileAt = [] (const std::string &path) -> std::string {
+            std::ifstream ifs(path.c_str());
+            std::string res((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+            return res;
+        };
+        std::string vs_source = ReadFileAt(vs);
+        std::string fs_source = ReadFileAt(fs);
+        auto vs_id = Compile(GL_VERTEX_SHADER, vs_source, vs);
+        auto fs_id = Compile(GL_FRAGMENT_SHADER, fs_source, fs);
+        id = Link(vs_id, fs_id);
+    } else {
+        auto vs_id = Compile(GL_VERTEX_SHADER, vs, "");
+        auto fs_id = Compile(GL_FRAGMENT_SHADER, fs, "");
+        id = Link(vs_id, fs_id);
+    }
 }
 
-Shader::Shader(std::string vs_source, std::string fs_source) {
-    auto vs_id = Compile(GL_VERTEX_SHADER, vs_source, "");
-    auto fs_id = Compile(GL_FRAGMENT_SHADER, fs_source, "");
-    id = Link(vs_id, fs_id);
-}
-
-uint32_t Shader::Compile(uint32_t type, const std::string &source, boost::filesystem::path path) {
+uint32_t Shader::Compile(uint32_t type, const std::string &source, const std::string &path) {
     uint32_t shader_id = glCreateShader(type);
     const char *temp = source.c_str();
     glShaderSource(shader_id, 1, &temp, nullptr);
@@ -83,14 +84,14 @@ template <>
 void Shader::SetUniform<glm::vec3>(const std::string &identifier, const glm::vec3 &value) const {
     auto location = glGetUniformLocation(id, identifier.c_str());
     if (location < 0) throw ShaderSettingError(identifier);
-    glUniform3fv(location, 1, value_ptr(value));
+    glUniform3fv(location, 1, glm::value_ptr(value));
 }
 
 template <>
 void Shader::SetUniform<glm::mat4>(const std::string &identifier, const glm::mat4 &value) const {
     auto location = glGetUniformLocation(id, identifier.c_str());
     if (location < 0) throw ShaderSettingError(identifier);
-    glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(value));
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
 
 template <>
@@ -111,5 +112,5 @@ template <>
 void Shader::SetUniform<std::vector<glm::mat4>>(const std::string &identifier, const std::vector<glm::mat4> &value) const {
     auto location = glGetUniformLocation(id, identifier.c_str());
     if (location < 0) throw ShaderSettingError(identifier);
-    glUniformMatrix4fv(location, value.size(), GL_FALSE, value_ptr(value[0]));
+    glUniformMatrix4fv(location, value.size(), GL_FALSE, glm::value_ptr(value[0]));
 }

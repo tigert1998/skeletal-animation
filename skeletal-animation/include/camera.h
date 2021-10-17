@@ -11,7 +11,7 @@
 #include <algorithm>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
+#include <glm/gtx/constants.hpp>
 
 class Camera {
 public:

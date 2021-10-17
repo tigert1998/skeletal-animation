@@ -12,8 +12,6 @@
 #include <string>
 #include <memory>
 
-#include <boost/filesystem.hpp>
-
 #include <assimp/scene.h>
 #include <glm/glm.hpp>
 
@@ -25,13 +23,13 @@
 class SpriteModel {
 public:
     SpriteModel() = delete;
-    SpriteModel(boost::filesystem::path path);
+    SpriteModel(const std::string &path);
     ~SpriteModel();
     void Draw(std::weak_ptr<Camera> camera_ptr);
     void Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time);
     
 private:
-    boost::filesystem::path directory_path_;
+    std::string directory_path_;
     std::vector<std::shared_ptr<Mesh>> mesh_ptrs_;
     const aiScene *scene_;
     std::shared_ptr<Shader> shader_ptr_;
