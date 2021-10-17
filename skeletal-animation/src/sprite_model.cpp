@@ -26,8 +26,8 @@ using namespace Assimp;
 using namespace glm;
 
 
-SpriteModel::SpriteModel(const std::string &path): directory_path_(ParentPath(ParentPath(path))) {
-    scene_ = aiImportFile(path.c_str(), aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);
+SpriteModel::SpriteModel(const std::string &path, const std::vector<std::string> &filtered_node_names): directory_path_(ParentPath(ParentPath(path))), filtered_node_names_(filtered_node_names) {
+    scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);
     shader_ptr_ = shared_ptr<Shader>(new Shader(
         Shader::PATH,
         directory_path_ + "/shaders/model.vert",
@@ -51,8 +51,15 @@ SpriteModel::~SpriteModel() {
     aiReleaseImport(scene_);
 }
 
+bool SpriteModel::NodeShouldBeFiltered(const std::string &name) {
+    for (int i = 0; i < filtered_node_names_.size(); i++) {
+        if (name == filtered_node_names_[i]) return true;
+    }
+    return false;
+}
+
 void SpriteModel::RecursivelyInitNodes(aiNode *node) {
-    if (node->mName != aiString("objTwoHand13_SM") && node->mName != aiString("Plane001") && node->mName != aiString("Plane002") && node->mName != aiString("obj53002_LynM001")) {
+    if (!NodeShouldBeFiltered(node->mName.C_Str())) {
         for (int i = 0; i < node->mNumMeshes; i++) {
             auto mesh = scene_->mMeshes[node->mMeshes[i]];
             mesh_ptrs_.emplace_back(make_shared<Mesh>(directory_path_, mesh, scene_, bone_namer_, bone_offsets_));
@@ -156,10 +163,11 @@ void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node, 
     }
 }
 
-void SpriteModel::Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time) {
+void SpriteModel::Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time, mat4 model_matrix) {
     RecursivelyUpdateBoneMatrices(animation_id, scene_->mRootNode, mat4(1), time * scene_->mAnimations[animation_id]->mTicksPerSecond);
     shader_ptr_->Use();
-    shader_ptr_->SetUniform<mat4>("uModelMatrix", mat4(1));
+
+    shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
     shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr.lock()->view_matrix());
     shader_ptr_->SetUniform<mat4>("uProjectionMatrix", camera_ptr.lock()->projection_matrix());
     shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
@@ -169,10 +177,10 @@ void SpriteModel::Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, 
     }
 }
 
-void SpriteModel::Draw(std::weak_ptr<Camera> camera_ptr) {
+void SpriteModel::Draw(std::weak_ptr<Camera> camera_ptr, mat4 model_matrix) {
     std::fill(bone_matrices_.begin(), bone_matrices_.end(), mat4(1));
     shader_ptr_->Use();
-    shader_ptr_->SetUniform<mat4>("uModelMatrix", rotate(mat4(1), -pi<float>() / 2.0f, vec3(1, 0, 0)));
+    shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
     shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr.lock()->view_matrix());
     shader_ptr_->SetUniform<mat4>("uProjectionMatrix", camera_ptr.lock()->projection_matrix());
     shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);

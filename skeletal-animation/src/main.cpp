@@ -99,10 +99,12 @@ void Init() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  sprite_model_ptr =
-      make_shared<SpriteModel>("models/sprite/source/sprite.fbx");
-  camera_ptr =
-      make_shared<Camera>(vec3(0, 16, 56), static_cast<double>(width) / height);
+  sprite_model_ptr = make_shared<SpriteModel>(
+      "models/sprite/source/sprite.fbx",
+      std::vector<std::string>(
+          {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
+  camera_ptr = make_shared<Camera>(vec3(0.35, 0.25, 56),
+                                   static_cast<double>(width) / height);
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
     double move_ratio = 7;
     if (state[GLFW_KEY_W] || state[GLFW_KEY_UP]) {
@@ -149,7 +151,7 @@ int main() {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    sprite_model_ptr->Draw(0, camera_ptr, current_time);
+    sprite_model_ptr->Draw(0, camera_ptr, current_time, mat4(1));
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
