@@ -25,17 +25,6 @@ using std::pair;
 using namespace Assimp;
 using namespace glm;
 
-namespace {
-    std::string ParentPath(const std::string &path) {
-        int i;
-        for (i = path.size() - 2; i >= 0; i--) {
-            if (path[i] == '/' || path[i] == '\\' && path[i + 1] == '\\') {
-                break;   
-            }
-        }
-        return path.substr(0, i);
-    }
-}
 
 SpriteModel::SpriteModel(const std::string &path): directory_path_(ParentPath(path)) {
     scene_ = aiImportFile(path.c_str(), aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);

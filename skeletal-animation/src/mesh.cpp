@@ -17,14 +17,6 @@
 
 using namespace glm;
 
-namespace {
-    std::string BaseName(const std::string &path) {
-        int i;
-        for (i = (int) path.length() - 1; i >= 0; i--) 
-            if (path[i] == '\\' || path[i] == '/') break;
-        return path.substr(i + 1);
-    }
-}
 
 Mesh::Mesh(const std::string &directory_path, aiMesh *mesh, const aiScene *scene, Namer &bone_namer, std::vector<glm::mat4> &bone_offsets) {
     static std::vector<Vertex> vertices;
