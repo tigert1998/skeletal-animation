@@ -23,12 +23,13 @@
 class SpriteModel {
 public:
     SpriteModel() = delete;
-    SpriteModel(const std::string &path);
+    SpriteModel(const std::string &path, const std::vector<std::string> &filtered_node_names);
     ~SpriteModel();
-    void Draw(std::weak_ptr<Camera> camera_ptr);
-    void Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time);
-    
+    void Draw(std::weak_ptr<Camera> camera_ptr, glm::mat4 model_matrix);
+    void Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time, glm::mat4 model_matrix);
+
 private:
+    std::vector<std::string> filtered_node_names_;
     std::string directory_path_;
     std::vector<std::shared_ptr<Mesh>> mesh_ptrs_;
     const aiScene *scene_;
@@ -43,5 +44,7 @@ private:
     static glm::mat4 InterpolateTranslationMatrix(aiVectorKey *keys, uint32_t n, double ticks);
     static glm::mat4 InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n, double ticks);
     static glm::mat4 InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, double ticks);
+
+    bool NodeShouldBeFiltered(const std::string &name);
 };
 

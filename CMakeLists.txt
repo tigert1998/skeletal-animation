@@ -27,6 +27,21 @@ include_directories("${ASSIMP_INCLUDE_DIRS}")
 set(stb_dir "third_party/stb")
 include_directories("${stb_dir}")
 
+# imgui
+set(imgui_dir "third_party/imgui")
+include_directories("${imgui_dir}")
+set(imgui_srcs 
+    "${imgui_dir}/imgui_demo.cpp"
+    "${imgui_dir}/imgui_draw.cpp"
+    "${imgui_dir}/imgui_tables.cpp"
+    "${imgui_dir}/imgui_widgets.cpp"
+    "${imgui_dir}/imgui.cpp"
+    "${imgui_dir}/backends/imgui_impl_glfw.cpp"
+    "${imgui_dir}/backends/imgui_impl_opengl3.cpp"
+)
+add_library(imgui STATIC "${imgui_srcs}")
+target_link_libraries(imgui glfw)
+
 file(GLOB_RECURSE srcs "${src_dir}/*.cpp")
 add_executable(main "${srcs}")
-target_link_libraries(main glfw glad "${ASSIMP_LIBRARY_DIRS}/${ASSIMP_LIBRARIES}")
+target_link_libraries(main glfw glad imgui "${ASSIMP_LIBRARY_DIRS}/${ASSIMP_LIBRARIES}")
