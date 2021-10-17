@@ -15,6 +15,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "sprite_model.h"
+#include "utils.h"
 
 using std::string;
 using std::shared_ptr;
@@ -135,11 +136,6 @@ glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, d
 }
 
 void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node, glm::mat4 transform, double ticks) {
-    static auto mat4_from_aimatrix4x4 = [] (aiMatrix4x4 matrix) -> mat4 {
-        mat4 res;
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) res[j][i] = matrix[i][j];
-        return res;
-    };
     string node_name = node->mName.C_Str();
     auto animation = scene_->mAnimations[animation_id];
     mat4 current_transform;
@@ -156,7 +152,7 @@ void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node, 
         
         current_transform = translation_matrix * rotation_matrix * scaling_matrix;
     } else {
-        current_transform = mat4_from_aimatrix4x4(node->mTransformation);
+        current_transform = Mat4FromAimatrix4x4(node->mTransformation);
     }
     if (bone_namer_.map().count(node_name)) {
         uint32_t i = bone_namer_.map()[node_name];
