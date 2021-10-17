@@ -58,7 +58,7 @@ void Init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    sprite_model_ptr = make_shared<SpriteModel>("models/sprite/sprite.fbx");
+    sprite_model_ptr = make_shared<SpriteModel>("models/sprite/source/sprite.fbx");
     camera_ptr = make_shared<Camera>(vec3(0, 16, 56), static_cast<double>(width) / height);
     Keyboard::shared.Register([] (Keyboard::KeyboardState state, double time) {
         double move_ratio = 7;

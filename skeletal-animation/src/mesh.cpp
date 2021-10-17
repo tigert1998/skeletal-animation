@@ -31,7 +31,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh, const aiScene *scene
         material->GetTexture(aiTextureType_DIFFUSE, 0, &material_texture_path);
         std::string item = material_texture_path.C_Str();
         item = BaseName(item);
-        path = path + "/" + item;
+        path = path + "/textures/" + item;
     }
     texture_id_ = TextureManager::LoadTexture(path);
     
