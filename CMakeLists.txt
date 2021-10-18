@@ -10,4 +10,4 @@ target_link_libraries(engine glfw glad imgui glm assimp stb)
 target_include_directories(engine PUBLIC "engine/include")
 
 add_executable(model-visualizer "model-visualizer/src/main.cc")
-target_link_libraries(model-visualizer engine)
+target_link_libraries(model-visualizer engine glog::glog)

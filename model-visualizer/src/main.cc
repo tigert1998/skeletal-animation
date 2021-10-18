@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <glog/logging.h>
 #include <imgui.h>
 
 #include <iostream>
@@ -29,6 +30,8 @@ using namespace std;
 
 std::shared_ptr<SpriteModel> sprite_model_ptr;
 std::shared_ptr<Camera> camera_ptr;
+double animation_time = 0;
+int animation_id = -1;
 
 GLFWwindow *window;
 
@@ -66,12 +69,30 @@ void ImGuiWindow() {
   float f_arr[3] = {f.x, f.y, f.z};
   float alpha = camera_ptr->alpha();
   float beta = camera_ptr->beta();
+  char buf[1 << 10];
+  static int prev_animation_id = animation_id;
+  if (prev_animation_id != animation_id) {
+    if (0 <= animation_id && animation_id < sprite_model_ptr->NumAnimations()) {
+      LOG(INFO) << "switching to animation #" << animation_id;
+    } else {
+      LOG(INFO) << "deactivate animation";
+    }
+    prev_animation_id = animation_id;
+    animation_time = 0;
+  }
 
   ImGui::Begin("Panel");
   ImGui::InputFloat3("camera.position", p_arr);
   ImGui::InputFloat3("camera.front", f_arr);
   ImGui::InputFloat("camera.alpha", &alpha);
   ImGui::InputFloat("camera.beta", &beta);
+  if (ImGui::InputText("model path", buf, sizeof(buf),
+                       ImGuiInputTextFlags_EnterReturnsTrue)) {
+    LOG(INFO) << "loading model: " << buf;
+    sprite_model_ptr.reset(new SpriteModel(buf, std::vector<std::string>()));
+    animation_time = 0;
+  }
+  ImGui::InputInt("animation id", &animation_id, 1, 1);
   ImGui::End();
 
   camera_ptr->set_position(vec3(p_arr[0], p_arr[1], p_arr[2]));
@@ -137,13 +158,18 @@ void Init() {
   ImGuiInit();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  ::google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = 1;
+
   Init();
+
   while (!glfwWindowShouldClose(window)) {
     static double last_time = glfwGetTime();
     double current_time = glfwGetTime();
     double delta_time = current_time - last_time;
     last_time = current_time;
+    animation_time += delta_time;
 
     glfwPollEvents();
     Keyboard::shared.Elapse(delta_time);
@@ -151,7 +177,11 @@ int main() {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    sprite_model_ptr->Draw(0, camera_ptr, current_time, mat4(1));
+    if (animation_id < 0 || animation_id >= sprite_model_ptr->NumAnimations()) {
+      sprite_model_ptr->Draw(camera_ptr, mat4(1));
+    } else {
+      sprite_model_ptr->Draw(0, camera_ptr, animation_time, mat4(1));
+    }
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();

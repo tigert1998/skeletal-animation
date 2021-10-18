@@ -135,6 +135,10 @@ glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, d
     return mat4_from_aivector3d(left_ptr->mValue * (1.0f - factor) + right_ptr->mValue * factor);
 }
 
+int SpriteModel::NumAnimations() const {
+    return scene_->mNumAnimations;
+}
+
 void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node, glm::mat4 transform, double ticks) {
     string node_name = node->mName.C_Str();
     auto animation = scene_->mAnimations[animation_id];

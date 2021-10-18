@@ -38,3 +38,5 @@ set(imgui_srcs
 add_library(imgui STATIC "${imgui_srcs}")
 target_link_libraries(imgui glfw)
 target_include_directories(imgui PUBLIC "${imgui_dir}")
+
+add_subdirectory(glog)
