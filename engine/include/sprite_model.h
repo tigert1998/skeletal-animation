@@ -47,5 +47,8 @@ private:
     static glm::mat4 InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, double ticks);
 
     bool NodeShouldBeFiltered(const std::string &name);
+
+    static const std::string kVsSource;
+    static const std::string kFsSource;
 };
 

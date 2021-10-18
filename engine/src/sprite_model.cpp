@@ -29,9 +29,9 @@ using namespace glm;
 SpriteModel::SpriteModel(const std::string &path, const std::vector<std::string> &filtered_node_names): directory_path_(ParentPath(ParentPath(path))), filtered_node_names_(filtered_node_names) {
     scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);
     shader_ptr_ = shared_ptr<Shader>(new Shader(
-        Shader::PATH,
-        directory_path_ + "/shaders/model.vert",
-        directory_path_ + "/shaders/model.frag"
+        Shader::SRC,
+        SpriteModel::kVsSource,
+        SpriteModel::kFsSource
     ));
 
     animation_channel_map_.clear();
@@ -193,3 +193,61 @@ void SpriteModel::Draw(std::weak_ptr<Camera> camera_ptr, mat4 model_matrix) {
         mesh_ptr->Draw(shader_ptr_);
     }
 }
+
+const std::string SpriteModel::kVsSource = R"(
+#version 410 core
+
+const int MAX_BONES = 100;
+
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec2 aTexCoord;
+layout (location = 2) in vec3 aNormal;
+layout (location = 3) in ivec4 aBoneIDs0;
+layout (location = 4) in ivec4 aBoneIDs1;
+layout (location = 5) in vec4 aBoneWeights0;
+layout (location = 6) in vec4 aBoneWeights1;
+
+out vec3 vPosition;
+out vec2 vTexCoord;
+out vec3 vNormal;
+
+uniform mat4 uModelMatrix;
+uniform mat4 uViewMatrix;
+uniform mat4 uProjectionMatrix;
+uniform mat4 uBoneMatrices[MAX_BONES];
+
+mat4 CalcBoneMatrix() {
+    mat4 boneMatrix = mat4(0);
+    for (int i = 0; i < 4; i++) {
+        boneMatrix += uBoneMatrices[aBoneIDs0[i]] * aBoneWeights0[i];
+        boneMatrix += uBoneMatrices[aBoneIDs1[i]] * aBoneWeights1[i];
+    }
+    return boneMatrix;
+}
+
+void main() {
+    mat4 boneMatrix = CalcBoneMatrix();
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * boneMatrix * vec4(aPosition, 1);
+    vPosition = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 1));
+    vTexCoord = aTexCoord;
+    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 0));
+}
+)";
+
+const std::string SpriteModel::kFsSource = R"(
+#version 410 core
+
+const float zero = 0.00000001;
+
+in vec3 vPosition;
+in vec2 vTexCoord;
+in vec3 vNormal;
+
+uniform sampler2D uDiffuseTexture;
+
+out vec4 fragColor;
+
+void main() {
+    fragColor = vec4(texture(uDiffuseTexture, vTexCoord).rgb, 1);
+}
+)";
