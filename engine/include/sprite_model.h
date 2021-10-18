@@ -27,6 +27,7 @@ public:
     ~SpriteModel();
     void Draw(std::weak_ptr<Camera> camera_ptr, glm::mat4 model_matrix);
     void Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time, glm::mat4 model_matrix);
+    int NumAnimations() const;
 
 private:
     std::vector<std::string> filtered_node_names_;
@@ -46,5 +47,8 @@ private:
     static glm::mat4 InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, double ticks);
 
     bool NodeShouldBeFiltered(const std::string &name);
+
+    static const std::string kVsSource;
+    static const std::string kFsSource;
 };
 
