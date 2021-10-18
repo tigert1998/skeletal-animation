@@ -243,11 +243,21 @@ in vec3 vPosition;
 in vec2 vTexCoord;
 in vec3 vNormal;
 
+uniform bool uDiffuseEnabled;
 uniform sampler2D uDiffuseTexture;
+uniform bool uAmbientEnabled;
+uniform sampler2D uAmbientTexture;
 
 out vec4 fragColor;
 
 void main() {
-    fragColor = vec4(texture(uDiffuseTexture, vTexCoord).rgb, 1);
+    vec3 color = vec3(0);
+    if (uDiffuseEnabled) {
+        color += texture(uDiffuseTexture, vTexCoord).rgb;
+    }
+    if (uAmbientEnabled) {
+        color += texture(uAmbientTexture, vTexCoord).rgb;
+    }
+    fragColor = vec4(color, 1);
 }
 )";
