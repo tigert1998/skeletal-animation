@@ -121,7 +121,7 @@ void Init() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   sprite_model_ptr = make_shared<SpriteModel>(
-      "models/sprite/source/sprite.fbx",
+      "/Users/tigertang/Projects/skeletal-animation/models/sprite/source/sprite.fbx",
       std::vector<std::string>(
           {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
   camera_ptr = make_shared<Camera>(vec3(0.35, 0.25, 56),

@@ -11,6 +11,7 @@
 #include <assimp/scene.h>
 
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "namer.h"
@@ -27,8 +28,22 @@ class Mesh {
  private:
   uint32_t vao_, vbo_, ebo_, indices_size_;
 
-  std::map<std::string, std::pair<bool, uint32_t>> textures_ = {
-      {"DIFFUSE", {false, 0}},
-      {"AMBIENT", {false, 0}},
+  struct TextureRecord {
+    bool enabled;
+    uint32_t id;
+    float blend;
+    glm::vec3 base_color;
   };
+
+#define REGISTER(name)                   \
+  {                                      \
+#name, { false, 0, 0, glm::vec3(0) } \
+  }
+
+  std::map<std::string, TextureRecord> textures_ = {
+      REGISTER(DIFFUSE),
+      REGISTER(AMBIENT),
+  };
+
+#undef REGISTER
 };

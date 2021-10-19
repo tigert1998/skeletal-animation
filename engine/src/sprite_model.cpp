@@ -243,20 +243,25 @@ in vec3 vPosition;
 in vec2 vTexCoord;
 in vec3 vNormal;
 
-uniform bool uDiffuseEnabled;
-uniform sampler2D uDiffuseTexture;
-uniform bool uAmbientEnabled;
-uniform sampler2D uAmbientTexture;
+#define REGISTER(name) \
+    uniform bool u##name##Enabled;      \
+    uniform sampler2D u##name##Texture; \
+    uniform vec3 u##name##BaseColor;    \
+
+REGISTER(Diffuse)
+REGISTER(Ambient)
+
+#undef REGISTER
 
 out vec4 fragColor;
 
 void main() {
     vec3 color = vec3(0);
-    if (uDiffuseEnabled) {
-        color += texture(uDiffuseTexture, vTexCoord).rgb;
-    }
     if (uAmbientEnabled) {
-        color += texture(uAmbientTexture, vTexCoord).rgb;
+        color += uAmbientBaseColor + texture(uAmbientTexture, vTexCoord).rgb;
+    }
+    if (uDiffuseEnabled) {
+        color += uDiffuseBaseColor + texture(uDiffuseTexture, vTexCoord).rgb;
     }
     fragColor = vec4(color, 1);
 }

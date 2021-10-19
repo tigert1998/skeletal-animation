@@ -9,6 +9,7 @@
 #include "mesh.h"
 
 #include <glad/glad.h>
+#include <glog/logging.h>
 
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,18 +30,23 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     aiString material_texture_path;
     auto material = scene->mMaterials[mesh->mMaterialIndex];
 
-#define TRY_ADD_TEXTURE(name)                                                  \
+#define TRY_ADD_TEXTURE_WITH_BASE_COLOR(name)                                  \
   if (material->GetTextureCount(aiTextureType_##name) >= 1) {                  \
-    textures_[#name].first = true;                                             \
+    textures_[#name].enabled = true;                                           \
     material->GetTexture(aiTextureType_##name, 0, &material_texture_path);     \
     auto item = path + "/textures/" + BaseName(material_texture_path.C_Str()); \
-    textures_[#name].second = TextureManager::LoadTexture(item);               \
+    textures_[#name].id = TextureManager::LoadTexture(item);                   \
+    float blend = 1;                                                           \
+    material->Get(AI_MATKEY_TEXBLEND_##name(0), blend);                        \
+    textures_[#name].blend = blend;                                            \
+    aiColor3D color(0.f, 0.f, 0.f);                                            \
+    material->Get(AI_MATKEY_COLOR_##name, color);                              \
+    textures_[#name].base_color = glm::vec3(color[0], color[1], color[2]);     \
   }
+    TRY_ADD_TEXTURE_WITH_BASE_COLOR(DIFFUSE);
+    TRY_ADD_TEXTURE_WITH_BASE_COLOR(AMBIENT);
 
-    TRY_ADD_TEXTURE(DIFFUSE);
-    TRY_ADD_TEXTURE(AMBIENT);
-
-#undef TRY_ADD_TEXTURE
+#undef TRY_ADD_TEXTURE_WITH_BASE_COLOR
   }
   for (int i = 0; i < mesh->mNumVertices; i++) {
     auto vertex = Vertex();
@@ -124,8 +130,8 @@ Mesh::~Mesh() {
   glDeleteBuffers(1, &vbo_);
   glDeleteBuffers(1, &ebo_);
   for (auto kv : textures_) {
-    if (kv.second.first) {
-      glDeleteTextures(1, &kv.second.second);
+    if (kv.second.enabled) {
+      glDeleteTextures(1, &kv.second.id);
     }
   }
 }
@@ -133,16 +139,18 @@ Mesh::~Mesh() {
 void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
   int tot = 0;
   for (auto kv : textures_) {
-    bool enabled = kv.second.first;
+    bool enabled = kv.second.enabled;
     std::string name = SnakeToPascal(kv.first);
     shader_ptr.lock()->SetUniform<int32_t>(std::string("u") + name + "Enabled",
                                            enabled);
     if (enabled) {
       glActiveTexture(GL_TEXTURE0 + tot);
-      glBindTexture(GL_TEXTURE_2D, kv.second.second);
+      glBindTexture(GL_TEXTURE_2D, kv.second.id);
       shader_ptr.lock()->SetUniform<int32_t>(
           std::string("u") + name + "Texture", tot);
       tot++;
+      shader_ptr.lock()->SetUniform<glm::vec3>(
+          std::string("u") + name + "BaseColor", kv.second.base_color);
     }
   }
 
