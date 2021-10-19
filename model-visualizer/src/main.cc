@@ -28,8 +28,8 @@ uint32_t width = 1000, height = 600;
 using namespace glm;
 using namespace std;
 
-std::shared_ptr<SpriteModel> sprite_model_ptr;
-std::shared_ptr<Camera> camera_ptr;
+std::unique_ptr<SpriteModel> sprite_model_ptr;
+std::unique_ptr<Camera> camera_ptr;
 std::unique_ptr<LightSources> light_sources_ptr;
 
 double animation_time = 0;
@@ -73,6 +73,9 @@ void ImGuiWindow() {
   float beta = camera_ptr->beta();
   char buf[1 << 10];
   static int prev_animation_id = animation_id;
+  const char *default_shading_choices[] = {"off", "on"};
+  int default_shading_choice = sprite_model_ptr->default_shading() ? 1 : 0;
+
   if (prev_animation_id != animation_id) {
     if (0 <= animation_id && animation_id < sprite_model_ptr->NumAnimations()) {
       LOG(INFO) << "switching to animation #" << animation_id;
@@ -95,12 +98,16 @@ void ImGuiWindow() {
     animation_time = 0;
   }
   ImGui::InputInt("animation id", &animation_id, 1, 1);
+  ImGui::ListBox("default shading", &default_shading_choice,
+                 default_shading_choices,
+                 IM_ARRAYSIZE(default_shading_choices));
   ImGui::End();
 
   camera_ptr->set_position(vec3(p_arr[0], p_arr[1], p_arr[2]));
   camera_ptr->set_front(vec3(f_arr[0], f_arr[1], f_arr[2]));
   camera_ptr->set_alpha(alpha);
   camera_ptr->set_beta(beta);
+  sprite_model_ptr->set_default_shading(default_shading_choice == 1);
 }
 
 void Init() {
@@ -126,11 +133,11 @@ void Init() {
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
 
-  sprite_model_ptr = make_shared<SpriteModel>(
+  sprite_model_ptr = make_unique<SpriteModel>(
       "models/sprite/source/sprite.fbx",
       std::vector<std::string>(
           {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
-  camera_ptr = make_shared<Camera>(vec3(0.35, 0.25, 56),
+  camera_ptr = make_unique<Camera>(vec3(0.35, 0.25, 56),
                                    static_cast<double>(width) / height);
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
     double move_ratio = 7;

@@ -203,6 +203,7 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
+  shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
   for (const auto &mesh_ptr : mesh_ptrs_) {
     mesh_ptr->Draw(shader_ptr_);
@@ -221,10 +222,15 @@ void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
+  shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
   for (const auto &mesh_ptr : mesh_ptrs_) {
     mesh_ptr->Draw(shader_ptr_);
   }
+}
+
+void SpriteModel::set_default_shading(bool default_shading) {
+  default_shading_ = default_shading;
 }
 
 const std::string SpriteModel::kVsSource = R"(
@@ -304,11 +310,12 @@ REG_LIGHT(Point, 8)
 
 #undef REG_LIGHT
 
+uniform bool uDefaultShading;
+
 out vec4 fragColor;
 
-vec3 calcDiffuse() {
+vec3 calcDiffuse(vec3 raw) {
     vec3 normal = normalize(vNormal);
-    vec3 raw = texture(uDiffuseTexture, vTexCoord).rgb;
     vec3 ans = vec3(0);
     for (int i = 0; i < uDirectionalLightCount; i++) {
         vec3 dir = normalize(-uDirectionalLights[i].dir);
@@ -321,13 +328,22 @@ vec3 calcDiffuse() {
     return ans * raw;
 }
 
+vec3 defaultShading() {
+    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
+    return color * 0.2 + calcDiffuse(color);
+}
+
 void main() {
+    if (uDefaultShading) {
+        fragColor = vec4(defaultShading(), 1);
+        return;
+    }
     vec3 color = vec3(0);
     if (uAmbientEnabled) {
         color += texture(uAmbientTexture, vTexCoord).rgb;
     }
     if (uDiffuseEnabled) {
-        color += calcDiffuse();
+        color += calcDiffuse(texture(uDiffuseTexture, vTexCoord).rgb);
     }
     fragColor = vec4(color, 1);
 }

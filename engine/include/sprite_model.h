@@ -27,10 +27,13 @@ class SpriteModel {
   SpriteModel(const std::string &path,
               const std::vector<std::string> &filtered_node_names);
   ~SpriteModel();
-  void Draw(Camera *camera_ptr, LightSources *light_sources, glm::mat4 model_matrix);
+  void Draw(Camera *camera_ptr, LightSources *light_sources,
+            glm::mat4 model_matrix);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
             LightSources *light_sources, glm::mat4 model_matrix);
   int NumAnimations() const;
+  void set_default_shading(bool default_shading);
+  inline bool default_shading() { return default_shading_; }
 
  private:
   std::vector<std::string> filtered_node_names_;
@@ -41,6 +44,7 @@ class SpriteModel {
   Namer bone_namer_;
   std::vector<glm::mat4> bone_matrices_, bone_offsets_;
   std::map<std::pair<uint32_t, std::string>, uint32_t> animation_channel_map_;
+  bool default_shading_ = false;
 
   void RecursivelyInitNodes(aiNode *node);
   void RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
