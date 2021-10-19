@@ -6,192 +6,225 @@
 //  Copyright © 2018 tigertang. All rights reserved.
 //
 
+#include "sprite_model.h"
+
+#include <assimp/cimport.h>
+#include <assimp/postprocess.h>
+#include <glad/glad.h>
+
+#include <assimp/Importer.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-#include <glad/glad.h>
-#include <assimp/cimport.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include "sprite_model.h"
 #include "utils.h"
 
-using std::string;
-using std::shared_ptr;
 using std::make_shared;
-using std::vector;
 using std::pair;
+using std::shared_ptr;
+using std::string;
+using std::vector;
 using namespace Assimp;
 using namespace glm;
 
+SpriteModel::SpriteModel(const std::string &path,
+                         const std::vector<std::string> &filtered_node_names)
+    : directory_path_(ParentPath(ParentPath(path))),
+      filtered_node_names_(filtered_node_names) {
+  scene_ = aiImportFile(path.c_str(),
+                        aiProcess_GlobalScale | aiProcess_CalcTangentSpace |
+                            aiProcess_FlipUVs | aiProcess_Triangulate);
+  shader_ptr_ = shared_ptr<Shader>(
+      new Shader(Shader::SRC, SpriteModel::kVsSource, SpriteModel::kFsSource));
 
-SpriteModel::SpriteModel(const std::string &path, const std::vector<std::string> &filtered_node_names): directory_path_(ParentPath(ParentPath(path))), filtered_node_names_(filtered_node_names) {
-    scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace | aiProcess_FlipUVs | aiProcess_Triangulate);
-    shader_ptr_ = shared_ptr<Shader>(new Shader(
-        Shader::SRC,
-        SpriteModel::kVsSource,
-        SpriteModel::kFsSource
-    ));
-
-    animation_channel_map_.clear();
-    for (int i = 0; i < scene_->mNumAnimations; i++) {
-        auto animation = scene_->mAnimations[i];
-        for (int j = 0; j < animation->mNumChannels; j++) {
-            auto channel = animation->mChannels[j];
-            animation_channel_map_[pair<uint32_t, string>(i, channel->mNodeName.C_Str())] = j;
-        }
+  animation_channel_map_.clear();
+  for (int i = 0; i < scene_->mNumAnimations; i++) {
+    auto animation = scene_->mAnimations[i];
+    for (int j = 0; j < animation->mNumChannels; j++) {
+      auto channel = animation->mChannels[j];
+      animation_channel_map_[pair<uint32_t, string>(
+          i, channel->mNodeName.C_Str())] = j;
     }
-    
-    RecursivelyInitNodes(scene_->mRootNode);
-    bone_matrices_.resize(bone_namer_.total());
+  }
+
+  RecursivelyInitNodes(scene_->mRootNode);
+  bone_matrices_.resize(bone_namer_.total());
 }
 
-SpriteModel::~SpriteModel() {
-    aiReleaseImport(scene_);
-}
+SpriteModel::~SpriteModel() { aiReleaseImport(scene_); }
 
 bool SpriteModel::NodeShouldBeFiltered(const std::string &name) {
-    for (int i = 0; i < filtered_node_names_.size(); i++) {
-        if (name == filtered_node_names_[i]) return true;
-    }
-    return false;
+  for (int i = 0; i < filtered_node_names_.size(); i++) {
+    if (name == filtered_node_names_[i]) return true;
+  }
+  return false;
 }
 
 void SpriteModel::RecursivelyInitNodes(aiNode *node) {
-    if (!NodeShouldBeFiltered(node->mName.C_Str())) {
-        for (int i = 0; i < node->mNumMeshes; i++) {
-            auto mesh = scene_->mMeshes[node->mMeshes[i]];
-            mesh_ptrs_.emplace_back(make_shared<Mesh>(directory_path_, mesh, scene_, bone_namer_, bone_offsets_));
-        }
+  if (!NodeShouldBeFiltered(node->mName.C_Str())) {
+    for (int i = 0; i < node->mNumMeshes; i++) {
+      auto mesh = scene_->mMeshes[node->mMeshes[i]];
+      mesh_ptrs_.emplace_back(make_shared<Mesh>(directory_path_, mesh, scene_,
+                                                bone_namer_, bone_offsets_));
     }
-    for (int i = 0; i < node->mNumChildren; i++) {
-        RecursivelyInitNodes(node->mChildren[i]);
-    }
+  }
+  for (int i = 0; i < node->mNumChildren; i++) {
+    RecursivelyInitNodes(node->mChildren[i]);
+  }
 }
 
-glm::mat4 SpriteModel::InterpolateTranslationMatrix(aiVectorKey *keys, uint32_t n, double ticks) {
-    static auto mat4_from_aivector3d = [] (aiVector3D vector) -> mat4 {
-        return translate(mat4(1), vec3(vector.x, vector.y, vector.z));
-    };
-    if (n == 0) return mat4(1);
-    if (n == 1) return mat4_from_aivector3d(keys->mValue);
-    if (ticks <= keys[0].mTime) return mat4_from_aivector3d(keys[0].mValue);
-    if (keys[n - 1].mTime <= ticks) return mat4_from_aivector3d(keys[n - 1].mValue);
-    
-    aiVectorKey anchor;
-    anchor.mTime = ticks;
-    auto right_ptr = std::upper_bound(keys, keys + n, anchor, [] (const aiVectorKey &a, const aiVectorKey &b) {
+glm::mat4 SpriteModel::InterpolateTranslationMatrix(aiVectorKey *keys,
+                                                    uint32_t n, double ticks) {
+  static auto mat4_from_aivector3d = [](aiVector3D vector) -> mat4 {
+    return translate(mat4(1), vec3(vector.x, vector.y, vector.z));
+  };
+  if (n == 0) return mat4(1);
+  if (n == 1) return mat4_from_aivector3d(keys->mValue);
+  if (ticks <= keys[0].mTime) return mat4_from_aivector3d(keys[0].mValue);
+  if (keys[n - 1].mTime <= ticks)
+    return mat4_from_aivector3d(keys[n - 1].mValue);
+
+  aiVectorKey anchor;
+  anchor.mTime = ticks;
+  auto right_ptr = std::upper_bound(
+      keys, keys + n, anchor, [](const aiVectorKey &a, const aiVectorKey &b) {
         return a.mTime < b.mTime;
-    });
-    auto left_ptr = right_ptr - 1;
-    
-    float factor = (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
-    return mat4_from_aivector3d(left_ptr->mValue * (1.0f - factor) + right_ptr->mValue * factor);
+      });
+  auto left_ptr = right_ptr - 1;
+
+  float factor =
+      (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
+  return mat4_from_aivector3d(left_ptr->mValue * (1.0f - factor) +
+                              right_ptr->mValue * factor);
 }
 
-glm::mat4 SpriteModel::InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n, double ticks) {
-    static auto mat4_from_aiquaternion = [] (aiQuaternion quaternion) -> mat4 {
-        auto rotation_matrix = quaternion.GetMatrix();
-        mat4 res(1);
-        for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) res[j][i] = rotation_matrix[i][j];
-        return res;
-    };
-    if (n == 0) return mat4(1);
-    if (n == 1) return mat4_from_aiquaternion(keys->mValue);
-    if (ticks <= keys[0].mTime) return mat4_from_aiquaternion(keys[0].mValue);
-    if (keys[n - 1].mTime <= ticks) return mat4_from_aiquaternion(keys[n - 1].mValue);
-    
-    aiQuatKey anchor;
-    anchor.mTime = ticks;
-    auto right_ptr = std::upper_bound(keys, keys + n, anchor, [] (const aiQuatKey &a, const aiQuatKey &b) {
+glm::mat4 SpriteModel::InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n,
+                                                 double ticks) {
+  static auto mat4_from_aiquaternion = [](aiQuaternion quaternion) -> mat4 {
+    auto rotation_matrix = quaternion.GetMatrix();
+    mat4 res(1);
+    for (int i = 0; i < 3; i++)
+      for (int j = 0; j < 3; j++) res[j][i] = rotation_matrix[i][j];
+    return res;
+  };
+  if (n == 0) return mat4(1);
+  if (n == 1) return mat4_from_aiquaternion(keys->mValue);
+  if (ticks <= keys[0].mTime) return mat4_from_aiquaternion(keys[0].mValue);
+  if (keys[n - 1].mTime <= ticks)
+    return mat4_from_aiquaternion(keys[n - 1].mValue);
+
+  aiQuatKey anchor;
+  anchor.mTime = ticks;
+  auto right_ptr = std::upper_bound(
+      keys, keys + n, anchor,
+      [](const aiQuatKey &a, const aiQuatKey &b) { return a.mTime < b.mTime; });
+  auto left_ptr = right_ptr - 1;
+
+  double factor =
+      (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
+  aiQuaternion out;
+  aiQuaternion::Interpolate(out, left_ptr->mValue, right_ptr->mValue, factor);
+  return mat4_from_aiquaternion(out);
+}
+
+glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n,
+                                                double ticks) {
+  static auto mat4_from_aivector3d = [](aiVector3D vector) -> mat4 {
+    return scale(mat4(1), vec3(vector.x, vector.y, vector.z));
+  };
+  if (n == 0) return mat4(1);
+  if (n == 1) return mat4_from_aivector3d(keys->mValue);
+  if (ticks <= keys[0].mTime) return mat4_from_aivector3d(keys[0].mValue);
+  if (keys[n - 1].mTime <= ticks)
+    return mat4_from_aivector3d(keys[n - 1].mValue);
+
+  aiVectorKey anchor;
+  anchor.mTime = ticks;
+  auto right_ptr = std::upper_bound(
+      keys, keys + n, anchor, [](const aiVectorKey &a, const aiVectorKey &b) {
         return a.mTime < b.mTime;
-    });
-    auto left_ptr = right_ptr - 1;
-    
-    double factor = (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
-    aiQuaternion out;
-    aiQuaternion::Interpolate(out, left_ptr->mValue, right_ptr->mValue, factor);
-    return mat4_from_aiquaternion(out);
+      });
+  auto left_ptr = right_ptr - 1;
+
+  float factor =
+      (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
+  return mat4_from_aivector3d(left_ptr->mValue * (1.0f - factor) +
+                              right_ptr->mValue * factor);
 }
 
-glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n, double ticks) {
-    static auto mat4_from_aivector3d = [] (aiVector3D vector) -> mat4 {
-        return scale(mat4(1), vec3(vector.x, vector.y, vector.z));
-    };
-    if (n == 0) return mat4(1);
-    if (n == 1) return mat4_from_aivector3d(keys->mValue);
-    if (ticks <= keys[0].mTime) return mat4_from_aivector3d(keys[0].mValue);
-    if (keys[n - 1].mTime <= ticks) return mat4_from_aivector3d(keys[n - 1].mValue);
-    
-    aiVectorKey anchor;
-    anchor.mTime = ticks;
-    auto right_ptr = std::upper_bound(keys, keys + n, anchor, [] (const aiVectorKey &a, const aiVectorKey &b) {
-        return a.mTime < b.mTime;
-    });
-    auto left_ptr = right_ptr - 1;
-    
-    float factor = (ticks - left_ptr->mTime) / (right_ptr->mTime - left_ptr->mTime);
-    return mat4_from_aivector3d(left_ptr->mValue * (1.0f - factor) + right_ptr->mValue * factor);
+int SpriteModel::NumAnimations() const { return scene_->mNumAnimations; }
+
+void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
+                                                glm::mat4 transform,
+                                                double ticks) {
+  string node_name = node->mName.C_Str();
+  auto animation = scene_->mAnimations[animation_id];
+  mat4 current_transform;
+  if (animation_channel_map_.count(
+          pair<uint32_t, string>(animation_id, node_name))) {
+    uint32_t channel_id =
+        animation_channel_map_[pair<uint32_t, string>(animation_id, node_name)];
+    auto channel = animation->mChannels[channel_id];
+
+    // translation matrix
+    mat4 translation_matrix = InterpolateTranslationMatrix(
+        channel->mPositionKeys, channel->mNumPositionKeys, ticks);
+    // rotation matrix
+    mat4 rotation_matrix = InterpolateRotationMatrix(
+        channel->mRotationKeys, channel->mNumRotationKeys, ticks);
+    // scaling matrix
+    mat4 scaling_matrix = InterpolateScalingMatrix(
+        channel->mScalingKeys, channel->mNumScalingKeys, ticks);
+
+    current_transform = translation_matrix * rotation_matrix * scaling_matrix;
+  } else {
+    current_transform = Mat4FromAimatrix4x4(node->mTransformation);
+  }
+  if (bone_namer_.map().count(node_name)) {
+    uint32_t i = bone_namer_.map()[node_name];
+    bone_matrices_[i] = transform * current_transform * bone_offsets_[i];
+  }
+  for (int i = 0; i < node->mNumChildren; i++) {
+    RecursivelyUpdateBoneMatrices(animation_id, node->mChildren[i],
+                                  transform * current_transform, ticks);
+  }
 }
 
-int SpriteModel::NumAnimations() const {
-    return scene_->mNumAnimations;
+void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
+                       LightSources *light_sources, mat4 model_matrix) {
+  RecursivelyUpdateBoneMatrices(
+      animation_id, scene_->mRootNode, mat4(1),
+      time * scene_->mAnimations[animation_id]->mTicksPerSecond);
+  shader_ptr_->Use();
+  if (light_sources != nullptr) {
+    light_sources->Set(shader_ptr_.get());
+  }
+  shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
+  shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
+  shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
+                                camera_ptr->projection_matrix());
+  shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
+
+  for (const auto &mesh_ptr : mesh_ptrs_) {
+    mesh_ptr->Draw(shader_ptr_);
+  }
 }
 
-void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node, glm::mat4 transform, double ticks) {
-    string node_name = node->mName.C_Str();
-    auto animation = scene_->mAnimations[animation_id];
-    mat4 current_transform;
-    if (animation_channel_map_.count(pair<uint32_t, string>(animation_id, node_name))) {
-        uint32_t channel_id = animation_channel_map_[pair<uint32_t, string>(animation_id, node_name)];
-        auto channel = animation->mChannels[channel_id];
-    
-        // translation matrix
-        mat4 translation_matrix = InterpolateTranslationMatrix(channel->mPositionKeys, channel->mNumPositionKeys, ticks);
-        // rotation matrix
-        mat4 rotation_matrix = InterpolateRotationMatrix(channel->mRotationKeys, channel->mNumRotationKeys, ticks);
-        // scaling matrix
-        mat4 scaling_matrix = InterpolateScalingMatrix(channel->mScalingKeys, channel->mNumScalingKeys, ticks);
-        
-        current_transform = translation_matrix * rotation_matrix * scaling_matrix;
-    } else {
-        current_transform = Mat4FromAimatrix4x4(node->mTransformation);
-    }
-    if (bone_namer_.map().count(node_name)) {
-        uint32_t i = bone_namer_.map()[node_name];
-        bone_matrices_[i] = transform * current_transform * bone_offsets_[i];
-    }
-    for (int i = 0; i < node->mNumChildren; i++) {
-        RecursivelyUpdateBoneMatrices(animation_id, node->mChildren[i], transform * current_transform, ticks);
-    }
-}
+void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
+                       mat4 model_matrix) {
+  std::fill(bone_matrices_.begin(), bone_matrices_.end(), mat4(1));
+  shader_ptr_->Use();
+  if (light_sources != nullptr) {
+    light_sources->Set(shader_ptr_.get());
+  }
+  shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
+  shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
+  shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
+                                camera_ptr->projection_matrix());
+  shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
 
-void SpriteModel::Draw(uint32_t animation_id, std::weak_ptr<Camera> camera_ptr, double time, mat4 model_matrix) {
-    RecursivelyUpdateBoneMatrices(animation_id, scene_->mRootNode, mat4(1), time * scene_->mAnimations[animation_id]->mTicksPerSecond);
-    shader_ptr_->Use();
-
-    shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
-    shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr.lock()->view_matrix());
-    shader_ptr_->SetUniform<mat4>("uProjectionMatrix", camera_ptr.lock()->projection_matrix());
-    shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
-    
-    for (const auto &mesh_ptr: mesh_ptrs_) {
-        mesh_ptr->Draw(shader_ptr_);
-    }
-}
-
-void SpriteModel::Draw(std::weak_ptr<Camera> camera_ptr, mat4 model_matrix) {
-    std::fill(bone_matrices_.begin(), bone_matrices_.end(), mat4(1));
-    shader_ptr_->Use();
-    shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
-    shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr.lock()->view_matrix());
-    shader_ptr_->SetUniform<mat4>("uProjectionMatrix", camera_ptr.lock()->projection_matrix());
-    shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
-    
-    for (const auto &mesh_ptr: mesh_ptrs_) {
-        mesh_ptr->Draw(shader_ptr_);
-    }
+  for (const auto &mesh_ptr : mesh_ptrs_) {
+    mesh_ptr->Draw(shader_ptr_);
+  }
 }
 
 const std::string SpriteModel::kVsSource = R"(
@@ -230,7 +263,7 @@ void main() {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * boneMatrix * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
-    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 0));
+    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aNormal, 0));
 }
 )";
 
@@ -243,20 +276,58 @@ in vec3 vPosition;
 in vec2 vTexCoord;
 in vec3 vNormal;
 
-uniform bool uDiffuseEnabled;
-uniform sampler2D uDiffuseTexture;
-uniform bool uAmbientEnabled;
-uniform sampler2D uAmbientTexture;
+#define REG_TEX(name) \
+    uniform bool u##name##Enabled;      \
+    uniform sampler2D u##name##Texture;
+
+REG_TEX(Ambient)
+REG_TEX(Diffuse)
+
+#undef REG_TEX
+
+struct DirectionalLight {
+    vec3 dir;
+    vec3 color;
+};
+
+struct PointLight {
+    vec3 pos;
+    vec3 color;
+};
+
+#define REG_LIGHT(name, count) \
+    uniform int u##name##LightCount;      \
+    uniform name##Light u##name##Lights[count];
+
+REG_LIGHT(Directional, 1)
+REG_LIGHT(Point, 8)
+
+#undef REG_LIGHT
 
 out vec4 fragColor;
 
+vec3 calcDiffuse() {
+    vec3 normal = normalize(vNormal);
+    vec3 raw = texture(uDiffuseTexture, vTexCoord).rgb;
+    vec3 ans = vec3(0);
+    for (int i = 0; i < uDirectionalLightCount; i++) {
+        vec3 dir = normalize(-uDirectionalLights[i].dir);
+        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
+    }
+    for (int i = 0; i < uPointLightCount; i++) {
+        vec3 dir = normalize(uPointLights[i].pos - vPosition);
+        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
+    }
+    return ans * raw;
+}
+
 void main() {
     vec3 color = vec3(0);
-    if (uDiffuseEnabled) {
-        color += texture(uDiffuseTexture, vTexCoord).rgb;
-    }
     if (uAmbientEnabled) {
         color += texture(uAmbientTexture, vTexCoord).rgb;
+    }
+    if (uDiffuseEnabled) {
+        color += calcDiffuse();
     }
     fragColor = vec4(color, 1);
 }
