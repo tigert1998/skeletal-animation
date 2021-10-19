@@ -105,13 +105,13 @@ void Shader::SetUniform<int32_t>(const std::string &identifier,
   glUniform1i(location, value);
 }
 
-template <typename int32_t>
+template <>
 int32_t Shader::GetUniform(const std::string &identifier) const {
   auto location = glGetUniformLocation(id, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
-  int32_t ans;
-  glGetUniformiv(id, location, &ans);
-  return ans;
+  int32_t value;
+  glGetUniformiv(id, location, &value);
+  return value;
 }
 
 template <>

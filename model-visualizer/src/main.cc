@@ -30,6 +30,8 @@ using namespace std;
 
 std::shared_ptr<SpriteModel> sprite_model_ptr;
 std::shared_ptr<Camera> camera_ptr;
+std::unique_ptr<LightSources> light_sources_ptr;
+
 double animation_time = 0;
 int animation_id = -1;
 
@@ -120,9 +122,12 @@ void Init() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  light_sources_ptr = make_unique<LightSources>();
+  light_sources_ptr->Add(
+      make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
+
   sprite_model_ptr = make_shared<SpriteModel>(
-      "/Users/tigertang/Projects/skeletal-animation/models/sprite/source/"
-      "sprite.fbx",
+      "models/sprite/source/sprite.fbx",
       std::vector<std::string>(
           {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
   camera_ptr = make_shared<Camera>(vec3(0.35, 0.25, 56),
@@ -179,10 +184,11 @@ int main(int argc, char *argv[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (animation_id < 0 || animation_id >= sprite_model_ptr->NumAnimations()) {
-      sprite_model_ptr->Draw(camera_ptr.get(), nullptr, mat4(1));
-    } else {
-      sprite_model_ptr->Draw(0, animation_time, camera_ptr.get(), nullptr,
+      sprite_model_ptr->Draw(camera_ptr.get(), light_sources_ptr.get(),
                              mat4(1));
+    } else {
+      sprite_model_ptr->Draw(0, animation_time, camera_ptr.get(),
+                             light_sources_ptr.get(), mat4(1));
     }
 
     ImGui_ImplGlfw_NewFrame();

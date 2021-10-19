@@ -195,7 +195,9 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   shader_ptr_->Use();
-
+  if (light_sources != nullptr) {
+    light_sources->Set(shader_ptr_.get());
+  }
   shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
   shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
@@ -211,6 +213,9 @@ void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
                        mat4 model_matrix) {
   std::fill(bone_matrices_.begin(), bone_matrices_.end(), mat4(1));
   shader_ptr_->Use();
+  if (light_sources != nullptr) {
+    light_sources->Set(shader_ptr_.get());
+  }
   shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
   shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
@@ -258,7 +263,7 @@ void main() {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * boneMatrix * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
-    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 0));
+    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aNormal, 0));
 }
 )";
 
@@ -301,13 +306,28 @@ REG_LIGHT(Point, 8)
 
 out vec4 fragColor;
 
+vec3 calcDiffuse() {
+    vec3 normal = normalize(vNormal);
+    vec3 raw = texture(uDiffuseTexture, vTexCoord).rgb;
+    vec3 ans = vec3(0);
+    for (int i = 0; i < uDirectionalLightCount; i++) {
+        vec3 dir = normalize(-uDirectionalLights[i].dir);
+        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
+    }
+    for (int i = 0; i < uPointLightCount; i++) {
+        vec3 dir = normalize(uPointLights[i].pos - vPosition);
+        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
+    }
+    return ans * raw;
+}
+
 void main() {
     vec3 color = vec3(0);
     if (uAmbientEnabled) {
         color += texture(uAmbientTexture, vTexCoord).rgb;
     }
     if (uDiffuseEnabled) {
-        color += texture(uDiffuseTexture, vTexCoord).rgb;
+        color += calcDiffuse();
     }
     fragColor = vec4(color, 1);
 }
