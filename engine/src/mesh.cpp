@@ -36,9 +36,8 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     material->GetTexture(aiTextureType_##name, 0, &material_texture_path);     \
     auto item = path + "/textures/" + BaseName(material_texture_path.C_Str()); \
     textures_[#name].id = TextureManager::LoadTexture(item);                   \
-    float blend = 1;                                                           \
-    material->Get(AI_MATKEY_TEXBLEND_##name(0), blend);                        \
-    textures_[#name].blend = blend;                                            \
+    material->Get(AI_MATKEY_TEXBLEND_##name(0), textures_[#name].blend);       \
+    material->Get(AI_MATKEY_TEXOP_##name(0), textures_[#name].op);             \
     aiColor3D color(0.f, 0.f, 0.f);                                            \
     material->Get(AI_MATKEY_COLOR_##name, color);                              \
     textures_[#name].base_color = glm::vec3(color[0], color[1], color[2]);     \
@@ -149,8 +148,6 @@ void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
       shader_ptr.lock()->SetUniform<int32_t>(
           std::string("u") + name + "Texture", tot);
       tot++;
-      shader_ptr.lock()->SetUniform<glm::vec3>(
-          std::string("u") + name + "BaseColor", kv.second.base_color);
     }
   }
 

@@ -31,13 +31,14 @@ class Mesh {
   struct TextureRecord {
     bool enabled;
     uint32_t id;
+    int32_t op;
     float blend;
     glm::vec3 base_color;
   };
 
-#define REGISTER(name)                   \
-  {                                      \
-#name, { false, 0, 0, glm::vec3(0) } \
+#define REGISTER(name)                        \
+  {                                           \
+#name, { false, 0, -1, -1, glm::vec3(0) } \
   }
 
   std::map<std::string, TextureRecord> textures_ = {
