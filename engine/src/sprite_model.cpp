@@ -195,6 +195,7 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   shader_ptr_->Use();
+  shader_ptr_->SetUniform<int32_t>("uAnimated", 1);
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
@@ -212,8 +213,8 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
 
 void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
                        mat4 model_matrix) {
-  std::fill(bone_matrices_.begin(), bone_matrices_.end(), mat4(1));
   shader_ptr_->Use();
+  shader_ptr_->SetUniform<int32_t>("uAnimated", 0);
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
@@ -250,6 +251,7 @@ out vec3 vPosition;
 out vec2 vTexCoord;
 out vec3 vNormal;
 
+uniform bool uAnimated;
 uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
@@ -258,14 +260,21 @@ uniform mat4 uBoneMatrices[MAX_BONES];
 mat4 CalcBoneMatrix() {
     mat4 boneMatrix = mat4(0);
     for (int i = 0; i < 4; i++) {
+        if (aBoneIDs0[i] < 0) return boneMatrix;
         boneMatrix += uBoneMatrices[aBoneIDs0[i]] * aBoneWeights0[i];
+    }
+    for (int i = 0; i < 4; i++) {
+        if (aBoneIDs1[i] < 0) return boneMatrix;
         boneMatrix += uBoneMatrices[aBoneIDs1[i]] * aBoneWeights1[i];
     }
     return boneMatrix;
 }
 
 void main() {
-    mat4 boneMatrix = CalcBoneMatrix();
+    mat4 boneMatrix = mat4(1);
+    if (uAnimated) {
+      boneMatrix = CalcBoneMatrix();
+    }
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * boneMatrix * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
