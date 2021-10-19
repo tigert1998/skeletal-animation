@@ -121,7 +121,8 @@ void Init() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   sprite_model_ptr = make_shared<SpriteModel>(
-      "/Users/tigertang/Projects/skeletal-animation/models/sprite/source/sprite.fbx",
+      "/Users/tigertang/Projects/skeletal-animation/models/sprite/source/"
+      "sprite.fbx",
       std::vector<std::string>(
           {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
   camera_ptr = make_shared<Camera>(vec3(0.35, 0.25, 56),
@@ -178,9 +179,10 @@ int main(int argc, char *argv[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (animation_id < 0 || animation_id >= sprite_model_ptr->NumAnimations()) {
-      sprite_model_ptr->Draw(camera_ptr, mat4(1));
+      sprite_model_ptr->Draw(camera_ptr.get(), nullptr, mat4(1));
     } else {
-      sprite_model_ptr->Draw(0, camera_ptr, animation_time, mat4(1));
+      sprite_model_ptr->Draw(0, animation_time, camera_ptr.get(), nullptr,
+                             mat4(1));
     }
 
     ImGui_ImplGlfw_NewFrame();
