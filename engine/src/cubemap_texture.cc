@@ -1,7 +1,3 @@
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#endif
-
 #include "cubemap_texture.h"
 
 #include <glad/glad.h>
@@ -56,3 +52,5 @@ void CubemapTexture::Bind(uint32_t unit) {
   glActiveTexture(unit);
   glBindTexture(GL_TEXTURE_CUBE_MAP, id_);
 }
+
+CubemapTexture::~CubemapTexture() {}

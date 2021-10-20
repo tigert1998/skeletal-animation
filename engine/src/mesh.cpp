@@ -152,6 +152,6 @@ void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
   }
 
   glBindVertexArray(vao_);
-  glDrawArrays(GL_TRIANGLES, 0, indices_size_);
+  glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
 }
