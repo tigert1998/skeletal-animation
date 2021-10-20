@@ -30,9 +30,9 @@ SpriteModel::SpriteModel(const std::string &path,
                          const std::vector<std::string> &filtered_node_names)
     : directory_path_(ParentPath(ParentPath(path))),
       filtered_node_names_(filtered_node_names) {
-  scene_ = aiImportFile(path.c_str(),
-                        aiProcess_GlobalScale | aiProcess_CalcTangentSpace |
-                            aiProcess_FlipUVs | aiProcess_Triangulate);
+  scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale |
+                                          aiProcess_CalcTangentSpace |
+                                          aiProcess_Triangulate);
   shader_ptr_ = shared_ptr<Shader>(
       new Shader(Shader::SRC, SpriteModel::kVsSource, SpriteModel::kFsSource));
 

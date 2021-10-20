@@ -30,6 +30,7 @@ uint32_t TextureManager::LoadTexture(const std::string& path) {
   static map<string, uint32_t> memory;
   if (memory.count(path.c_str())) return memory[path.c_str()];
   int w, h, comp;
+  stbi_set_flip_vertically_on_load(true);
   unsigned char* image = stbi_load(path.c_str(), &w, &h, &comp, 0);
   if (image == nullptr) throw LoadPictureError(path.c_str());
 
