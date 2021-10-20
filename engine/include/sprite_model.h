@@ -58,8 +58,8 @@ class SpriteModel {
                                             double ticks);
 
   bool NodeShouldBeFiltered(const std::string &name);
-  void InternalDraw(Camera *camera_ptr, LightSources *light_sources,
-                    glm::mat4 model_matrix);
+  void InternalDraw(bool animated, Camera *camera_ptr,
+                    LightSources *light_sources, glm::mat4 model_matrix);
 
   static const std::string kVsSource;
   static const std::string kFsSource;

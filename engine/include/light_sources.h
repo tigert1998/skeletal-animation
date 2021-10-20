@@ -8,6 +8,7 @@
 class Light {
  public:
   virtual void Set(Shader *shader) = 0;
+  virtual ~Light(){};
 };
 
 class Directional : public Light {
@@ -17,6 +18,7 @@ class Directional : public Light {
  public:
   explicit Directional(glm::vec3 dir, glm::vec3 color);
   void Set(Shader *shader) override;
+  inline ~Directional() override {}
 };
 
 class Point : public Light {
@@ -26,6 +28,7 @@ class Point : public Light {
  public:
   explicit Point(glm::vec3 pos, glm::vec3 color);
   void Set(Shader *shader) override;
+  inline ~Point() override {}
 };
 
 class LightSources : public Light {
@@ -35,4 +38,5 @@ class LightSources : public Light {
  public:
   void Add(std::unique_ptr<Light> light);
   void Set(Shader *shader) override;
+  inline ~LightSources() override {}
 };

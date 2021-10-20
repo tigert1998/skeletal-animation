@@ -194,20 +194,18 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
   RecursivelyUpdateBoneMatrices(
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
-  shader_ptr_->Use();
-  shader_ptr_->SetUniform<int32_t>("uAnimated", 1);
-  InternalDraw(camera_ptr, light_sources, model_matrix);
+  InternalDraw(true, camera_ptr, light_sources, model_matrix);
 }
 
 void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
                        mat4 model_matrix) {
-  shader_ptr_->Use();
-  shader_ptr_->SetUniform<int32_t>("uAnimated", 0);
-  InternalDraw(camera_ptr, light_sources, model_matrix);
+  InternalDraw(false, camera_ptr, light_sources, model_matrix);
 }
 
-void SpriteModel::InternalDraw(Camera *camera_ptr, LightSources *light_sources,
+void SpriteModel::InternalDraw(bool animated, Camera *camera_ptr,
+                               LightSources *light_sources,
                                glm::mat4 model_matrix) {
+  shader_ptr_->Use();
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
@@ -219,7 +217,8 @@ void SpriteModel::InternalDraw(Camera *camera_ptr, LightSources *light_sources,
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
   for (const auto &mesh_ptr : mesh_ptrs_) {
-    mesh_ptr->Draw(shader_ptr_);
+    shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
+    mesh_ptr->Draw(shader_ptr_.get());
   }
 }
 

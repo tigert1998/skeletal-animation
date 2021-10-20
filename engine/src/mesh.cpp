@@ -24,6 +24,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
            std::vector<glm::mat4> &bone_offsets) {
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
+  name_ = mesh->mName.C_Str();
 
   auto path = directory_path;
   {
@@ -74,6 +75,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     for (int j = 0; j < bone->mNumWeights; j++) {
       auto weight = bone->mWeights[j];
       vertices[weight.mVertexId].AddBone(id, weight.mWeight);
+      has_bone_ = true;
     }
   }
 
@@ -132,18 +134,21 @@ Mesh::~Mesh() {
   }
 }
 
-void Mesh::Draw(std::weak_ptr<Shader> shader_ptr) const {
+void Mesh::Draw(Shader *shader_ptr) const {
+  if (!has_bone_) {
+    shader_ptr->SetUniform<int32_t>("uAnimated", 0);
+  }
+
   int tot = 0;
   for (auto kv : textures_) {
     bool enabled = kv.second.enabled;
     std::string name = SnakeToPascal(kv.first);
-    shader_ptr.lock()->SetUniform<int32_t>(std::string("u") + name + "Enabled",
-                                           enabled);
+    shader_ptr->SetUniform<int32_t>(std::string("u") + name + "Enabled",
+                                    enabled);
     if (enabled) {
       glActiveTexture(GL_TEXTURE0 + tot);
       glBindTexture(GL_TEXTURE_2D, kv.second.id);
-      shader_ptr.lock()->SetUniform<int32_t>(
-          std::string("u") + name + "Texture", tot);
+      shader_ptr->SetUniform<int32_t>(std::string("u") + name + "Texture", tot);
       tot++;
     }
   }

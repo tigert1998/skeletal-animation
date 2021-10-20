@@ -23,10 +23,13 @@ class Mesh {
   Mesh(const std::string &directory_path, aiMesh *mesh, const aiScene *scene,
        Namer &bone_namer, std::vector<glm::mat4> &bone_offsets);
   ~Mesh();
-  void Draw(std::weak_ptr<Shader> shader_ptr) const;
+  void Draw(Shader *shader_ptr) const;
+  inline std::string name() { return name_; }
 
  private:
   uint32_t vao_, vbo_, ebo_, indices_size_;
+  std::string name_;
+  bool has_bone_ = false;
 
   struct TextureRecord {
     bool enabled;
