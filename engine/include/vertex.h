@@ -12,7 +12,7 @@
 
 #include <glm/glm.hpp>
 
-constexpr int kMaxBonesPerVertex = 8;
+constexpr int kMaxBonesPerVertex = 12;
 
 class Vertex {
  public:

@@ -196,25 +196,18 @@ void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   shader_ptr_->Use();
   shader_ptr_->SetUniform<int32_t>("uAnimated", 1);
-  if (light_sources != nullptr) {
-    light_sources->Set(shader_ptr_.get());
-  }
-  shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
-  shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
-  shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
-                                camera_ptr->projection_matrix());
-  shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
-  shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
-
-  for (const auto &mesh_ptr : mesh_ptrs_) {
-    mesh_ptr->Draw(shader_ptr_);
-  }
+  InternalDraw(camera_ptr, light_sources, model_matrix);
 }
 
 void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
                        mat4 model_matrix) {
   shader_ptr_->Use();
   shader_ptr_->SetUniform<int32_t>("uAnimated", 0);
+  InternalDraw(camera_ptr, light_sources, model_matrix);
+}
+
+void SpriteModel::InternalDraw(Camera *camera_ptr, LightSources *light_sources,
+                               glm::mat4 model_matrix) {
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
@@ -244,8 +237,10 @@ layout (location = 1) in vec2 aTexCoord;
 layout (location = 2) in vec3 aNormal;
 layout (location = 3) in ivec4 aBoneIDs0;
 layout (location = 4) in ivec4 aBoneIDs1;
-layout (location = 5) in vec4 aBoneWeights0;
-layout (location = 6) in vec4 aBoneWeights1;
+layout (location = 5) in ivec4 aBoneIDs2;
+layout (location = 6) in vec4 aBoneWeights0;
+layout (location = 7) in vec4 aBoneWeights1;
+layout (location = 8) in vec4 aBoneWeights2;
 
 out vec3 vPosition;
 out vec2 vTexCoord;
@@ -266,6 +261,10 @@ mat4 CalcBoneMatrix() {
     for (int i = 0; i < 4; i++) {
         if (aBoneIDs1[i] < 0) return boneMatrix;
         boneMatrix += uBoneMatrices[aBoneIDs1[i]] * aBoneWeights1[i];
+    }
+    for (int i = 0; i < 4; i++) {
+        if (aBoneIDs2[i] < 0) return boneMatrix;
+        boneMatrix += uBoneMatrices[aBoneIDs2[i]] * aBoneWeights2[i];
     }
     return boneMatrix;
 }

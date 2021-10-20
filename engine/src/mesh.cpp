@@ -101,23 +101,20 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
   glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(Vertex),
                         (void *)offsetof(Vertex, normal));
 
-  glEnableVertexAttribArray(3);
-  glVertexAttribIPointer(
-      3, 4, GL_INT, sizeof(Vertex),
-      (void *)(offsetof(Vertex, bone_ids) + 0 * sizeof(int)));
-  glEnableVertexAttribArray(4);
-  glVertexAttribIPointer(
-      4, 4, GL_INT, sizeof(Vertex),
-      (void *)(offsetof(Vertex, bone_ids) + 4 * sizeof(int)));
-
-  glEnableVertexAttribArray(5);
-  glVertexAttribPointer(
-      5, 4, GL_FLOAT, false, sizeof(Vertex),
-      (void *)(offsetof(Vertex, bone_weights) + 0 * sizeof(float)));
-  glEnableVertexAttribArray(6);
-  glVertexAttribPointer(
-      6, 4, GL_FLOAT, false, sizeof(Vertex),
-      (void *)(offsetof(Vertex, bone_weights) + 4 * sizeof(float)));
+  for (int i = 0; i < kMaxBonesPerVertex / 4; i++) {
+    int location = 3 + i;
+    glEnableVertexAttribArray(location);
+    glVertexAttribIPointer(
+        location, 4, GL_INT, sizeof(Vertex),
+        (void *)(offsetof(Vertex, bone_ids) + i * 4 * sizeof(int)));
+  }
+  for (int i = 0; i < kMaxBonesPerVertex / 4; i++) {
+    int location = 3 + kMaxBonesPerVertex / 4 + i;
+    glEnableVertexAttribArray(location);
+    glVertexAttribPointer(
+        location, 4, GL_FLOAT, false, sizeof(Vertex),
+        (void *)(offsetof(Vertex, bone_weights) + i * 4 * sizeof(float)));
+  }
 
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
