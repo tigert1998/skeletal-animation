@@ -53,7 +53,7 @@ uniform mat4 uViewMatrix;
 
 void main() {
     vTexCoord = aPosition;
-    gl_Position = uProjectionMatrix * uViewMatrix * vec4(aPosition, 1.0);
+    gl_Position = uProjectionMatrix * uViewMatrix * vec4(aPosition, 1);
 }
 )";
 const std::string Skybox::kFsSource = R"(
