@@ -23,7 +23,9 @@ void CubemapTexture::Load() {
   for (unsigned int i = 0; i < kTypes.size(); i++) {
     auto image_path = path_ + "/" + kTypes[i].second + "." + ext_;
     int w, h, comp;
-    stbi_set_flip_vertically_on_load(true);
+    // Cubemap follows RenderMan's convention:
+    // https://stackoverflow.com/questions/11685608/convention-of-faces-in-opengl-cubemapping/
+    stbi_set_flip_vertically_on_load(false);
     unsigned char* image = stbi_load(image_path.c_str(), &w, &h, &comp, 0);
     if (image == nullptr) throw LoadPictureError(image_path.c_str());
 
@@ -31,7 +33,7 @@ void CubemapTexture::Load() {
       glTexImage2D(kTypes[i].first, 0, GL_RGB, w, h, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, image);
     else if (comp == 4)
-      glTexImage2D(kTypes[i].first, 0, GL_RGBA, w, h, 0, GL_RGBA,
+      glTexImage2D(kTypes[i].first, 0, GL_RGB, w, h, 0, GL_RGBA,
                    GL_UNSIGNED_BYTE, image);
 
     stbi_image_free(image);

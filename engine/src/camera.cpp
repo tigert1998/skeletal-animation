@@ -15,7 +15,7 @@ using namespace glm;
 const double Camera::kMaxElevationAngle = 5 * pi<double>() / 12;
 
 mat4 Camera::projection_matrix() const {
-    return perspective(radians(120.f), 1.0f * (float) width_height_ratio_, 0.1f, 1000.0f);
+    return perspective(60.f, 1.0f * (float) width_height_ratio_, 0.1f, 1000.0f);
 }
 
 void Camera::set_width_height_ratio(double width_height_ratio) {

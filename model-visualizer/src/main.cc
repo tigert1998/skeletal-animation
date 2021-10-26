@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "keyboard.h"
+#include "skybox.h"
 #include "sprite_model.h"
 #include "wall.h"
 
@@ -31,6 +32,7 @@ using namespace std;
 std::unique_ptr<SpriteModel> sprite_model_ptr;
 std::unique_ptr<Camera> camera_ptr;
 std::unique_ptr<LightSources> light_sources_ptr;
+std::unique_ptr<Skybox> skybox_ptr;
 
 double animation_time = 0;
 int animation_id = -1;
@@ -137,8 +139,9 @@ void Init() {
       "models/sprite/source/sprite.fbx",
       std::vector<std::string>(
           {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
-  camera_ptr = make_unique<Camera>(vec3(0.35, 0.25, 56),
+  camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
+  skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
     double move_ratio = 7;
     if (state[GLFW_KEY_W] || state[GLFW_KEY_UP]) {
@@ -190,6 +193,7 @@ int main(int argc, char *argv[]) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    skybox_ptr->Draw(camera_ptr.get());
     if (animation_id < 0 || animation_id >= sprite_model_ptr->NumAnimations()) {
       sprite_model_ptr->Draw(camera_ptr.get(), light_sources_ptr.get(),
                              mat4(1));
