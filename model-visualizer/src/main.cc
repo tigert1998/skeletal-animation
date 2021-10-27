@@ -73,7 +73,7 @@ void ImGuiWindow() {
   float f_arr[3] = {f.x, f.y, f.z};
   float alpha = camera_ptr->alpha();
   float beta = camera_ptr->beta();
-  char buf[1 << 10];
+  char buf[1 << 10] = {0};
   static int prev_animation_id = animation_id;
   const char *default_shading_choices[] = {"off", "on"};
   int default_shading_choice = sprite_model_ptr->default_shading() ? 1 : 0;
@@ -136,9 +136,8 @@ void Init() {
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
 
   sprite_model_ptr = make_unique<SpriteModel>(
-      "models/sprite/source/sprite.fbx",
-      std::vector<std::string>(
-          {"objTwoHand13_SM", "Plane001", "Plane002", "obj53002_LynM001"}));
+      "models/phoenix-bird/source/fly.fbx",
+      std::vector<std::string>());
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
   skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");

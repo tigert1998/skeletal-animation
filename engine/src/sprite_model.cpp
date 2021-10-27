@@ -346,12 +346,15 @@ void main() {
         return;
     }
     vec3 color = vec3(0);
+    float alpha = 1.0f;
     if (uAmbientEnabled) {
         color += texture(uAmbientTexture, vTexCoord).rgb;
     }
     if (uDiffuseEnabled) {
-        color += calcDiffuse(texture(uDiffuseTexture, vTexCoord).rgb);
+        vec4 diffuseTexture = texture(uDiffuseTexture, vTexCoord); 
+        color += calcDiffuse(diffuseTexture.rgb);
+        alpha = diffuseTexture.a;
     }
-    fragColor = vec4(color, 1);
+    fragColor = vec4(color, alpha);
 }
 )";
