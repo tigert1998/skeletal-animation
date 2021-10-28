@@ -136,8 +136,7 @@ void Init() {
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
 
   sprite_model_ptr = make_unique<SpriteModel>(
-      "models/phoenix-bird/source/fly.fbx",
-      std::vector<std::string>());
+      "models/phoenix-bird/source/fly.fbx", std::vector<std::string>());
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
   skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");

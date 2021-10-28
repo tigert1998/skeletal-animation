@@ -295,6 +295,8 @@ in vec3 vNormal;
 
 REG_TEX(Ambient)
 REG_TEX(Diffuse)
+REG_TEX(Emissive)
+REG_TEX(BaseColor)
 
 #undef REG_TEX
 
@@ -354,6 +356,12 @@ void main() {
         vec4 diffuseTexture = texture(uDiffuseTexture, vTexCoord); 
         color += calcDiffuse(diffuseTexture.rgb);
         alpha = diffuseTexture.a;
+    }
+    if (uEmissiveEnabled) {
+        color += texture(uEmissiveTexture, vTexCoord).rgb;
+    }
+    if (uBaseColorEnabled) {
+        color += texture(uBaseColorTexture, vTexCoord).rgb;
     }
     fragColor = vec4(color, alpha);
 }
