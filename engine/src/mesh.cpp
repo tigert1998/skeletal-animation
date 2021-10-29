@@ -12,7 +12,9 @@
 #include <glog/logging.h>
 
 #include <algorithm>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
+#include <vector>
 
 #include "texture_manager.h"
 #include "utils.h"
@@ -81,7 +83,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     auto bone = mesh->mBones[i];
     auto id = bone_namer.Name(bone->mName.C_Str());
 
-    bone_offsets.resize(std::max(id + 1, (uint32_t)bone_offsets.size()));
+    bone_offsets.resize(max(id + 1, (uint32_t)bone_offsets.size()));
     bone_offsets[id] = Mat4FromAimatrix4x4(bone->mOffsetMatrix);
 
     for (int j = 0; j < bone->mNumWeights; j++) {
