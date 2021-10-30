@@ -1,4 +1,4 @@
-#include "terrian/simple_terrian.h"
+#include "terrain/simple_square_terrain.h"
 
 #include <glad/glad.h>
 
@@ -6,7 +6,7 @@
 
 #include "vertex.h"
 
-const std::string SimpleSquareTerrian::kVsSource = R"(
+const std::string SimpleSquareTerrain::kVsSource = R"(
 #version 410 core
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec2 aTexCoord;
@@ -28,7 +28,7 @@ void main() {
 }
 )";
 
-const std::string SimpleSquareTerrian::kFsSource = R"(
+const std::string SimpleSquareTerrain::kFsSource = R"(
 #version 410 core
 
 in vec3 vPosition;
@@ -61,7 +61,7 @@ void main() {
 }
 )";
 
-SimpleSquareTerrian::SimpleSquareTerrian(int size) : size_(size) {
+SimpleSquareTerrain::SimpleSquareTerrain(int size) : size_(size) {
   // size * size squares
   perlin_noise_.reset(new PerlinNoise(1024, 10086));
   shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
@@ -126,11 +126,11 @@ SimpleSquareTerrian::SimpleSquareTerrian(int size) : size_(size) {
   glBindVertexArray(0);
 }
 
-double SimpleSquareTerrian::get_height(double x, double y) {
+double SimpleSquareTerrain::get_height(double x, double y) {
   return perlin_noise_->Noise(x, y, 0);
 }
 
-void SimpleSquareTerrian::Draw(Camera *camera_ptr,
+void SimpleSquareTerrain::Draw(Camera *camera_ptr,
                                LightSources *light_sources) {
   shader_->Use();
   light_sources->Set(shader_.get());

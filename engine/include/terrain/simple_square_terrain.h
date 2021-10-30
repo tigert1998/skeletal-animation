@@ -5,9 +5,9 @@
 #include "camera.h"
 #include "light_sources.h"
 #include "shader.h"
-#include "terrian/perlin_noise.h"
+#include "terrain/perlin_noise.h"
 
-class SimpleSquareTerrian {
+class SimpleSquareTerrain {
  private:
   std::unique_ptr<PerlinNoise> perlin_noise_;
   int size_;
@@ -19,7 +19,7 @@ class SimpleSquareTerrian {
   static const std::string kVsSource, kFsSource;
 
  public:
-  SimpleSquareTerrian(int size);
+  SimpleSquareTerrain(int size);
 
   void Draw(Camera *camera_ptr, LightSources *light_sources);
 };

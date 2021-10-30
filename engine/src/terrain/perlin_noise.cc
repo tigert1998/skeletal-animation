@@ -1,4 +1,4 @@
-#include "terrian/perlin_noise.h"
+#include "terrain/perlin_noise.h"
 
 #include <glog/logging.h>
 
