@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/1.
 //  Copyright © 2018 tigertang. All rights reserved.

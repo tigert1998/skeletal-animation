@@ -1,6 +1,6 @@
 //
 //  mesh.cpp
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/3.
 //  Copyright © 2018 tigertang. All rights reserved.
@@ -21,10 +21,13 @@
 
 using namespace glm;
 
+constexpr int kMaxBonesPerVertex = 12;
+using VertexWithBones = Vertex<kMaxBonesPerVertex>;
+
 Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
            const aiScene *scene, Namer &bone_namer,
            std::vector<glm::mat4> &bone_offsets) {
-  std::vector<Vertex> vertices;
+  std::vector<VertexWithBones> vertices;
   std::vector<uint32_t> indices;
   name_ = mesh->mName.C_Str();
 
@@ -63,7 +66,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
 #undef TRY_ADD_TEXTURE_WITH_BASE_COLOR
   }
   for (int i = 0; i < mesh->mNumVertices; i++) {
-    auto vertex = Vertex();
+    auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
     vertex.tex_coord =
@@ -100,7 +103,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
   glBindVertexArray(vao_);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(),
+  glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWithBones) * vertices.size(),
                vertices.data(), GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
@@ -108,28 +111,28 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
                indices.data(), GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex),
-                        (void *)offsetof(Vertex, position));
+  glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(VertexWithBones),
+                        (void *)offsetof(VertexWithBones, position));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Vertex),
-                        (void *)offsetof(Vertex, tex_coord));
+  glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(VertexWithBones),
+                        (void *)offsetof(VertexWithBones, tex_coord));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(Vertex),
-                        (void *)offsetof(Vertex, normal));
+  glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(VertexWithBones),
+                        (void *)offsetof(VertexWithBones, normal));
 
   for (int i = 0; i < kMaxBonesPerVertex / 4; i++) {
     int location = 3 + i;
     glEnableVertexAttribArray(location);
     glVertexAttribIPointer(
-        location, 4, GL_INT, sizeof(Vertex),
-        (void *)(offsetof(Vertex, bone_ids) + i * 4 * sizeof(int)));
+        location, 4, GL_INT, sizeof(VertexWithBones),
+        (void *)(offsetof(VertexWithBones, bone_ids) + i * 4 * sizeof(int)));
   }
   for (int i = 0; i < kMaxBonesPerVertex / 4; i++) {
     int location = 3 + kMaxBonesPerVertex / 4 + i;
     glEnableVertexAttribArray(location);
-    glVertexAttribPointer(
-        location, 4, GL_FLOAT, false, sizeof(Vertex),
-        (void *)(offsetof(Vertex, bone_weights) + i * 4 * sizeof(float)));
+    glVertexAttribPointer(location, 4, GL_FLOAT, false, sizeof(VertexWithBones),
+                          (void *)(offsetof(VertexWithBones, bone_weights) +
+                                   i * 4 * sizeof(float)));
   }
 
   glBindVertexArray(0);

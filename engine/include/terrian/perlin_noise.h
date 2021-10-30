@@ -7,7 +7,7 @@
 class PerlinNoise {
  public:
   PerlinNoise() = delete;
-  PerlinNoise(int perm_size);
+  PerlinNoise(int perm_size, int seed);
   double Noise(double x, double y, double z) const;
   double Noise(glm::vec3 position) const;
   glm::vec3 DerivativeNoise(double x, double y, double z) const;

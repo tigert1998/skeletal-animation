@@ -1,6 +1,6 @@
 //
 //  namer.h
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/6.
 //

@@ -6,12 +6,15 @@
 #include "light_sources.h"
 #include "terrian/perlin_noise.h"
 
-class SimpleTerrian {
+class SimpleSquareTerrian {
  private:
   std::unique_ptr<PerlinNoise> perlin_noise_;
+  int size_;
+
+  double get_height(double x, double y);
 
  public:
-  SimpleTerrian();
+  SimpleSquareTerrian(int size);
 
   void Draw(Camera *camera_ptr, LightSources *light_sources);
 };

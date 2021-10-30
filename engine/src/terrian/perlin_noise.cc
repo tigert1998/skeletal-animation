@@ -45,9 +45,9 @@ PerlinNoise::WeightsType PerlinNoise::CalcWeights(double x, double y,
   return WeightsType(w, xw, xyw, xyzw);
 }
 
-PerlinNoise::PerlinNoise(int perm_size) : PERM_SIZE(perm_size) {
+PerlinNoise::PerlinNoise(int perm_size, int seed) : PERM_SIZE(perm_size) {
   CHECK(perm_size == (perm_size & -perm_size));
-  static std::default_random_engine engine(10086);
+  static std::default_random_engine engine(seed);
   std::uniform_int_distribution<int> dis(0, perm_size - 1);
   auto dice = std::bind(dis, engine);
   perm_random_.resize(perm_size << 1);
