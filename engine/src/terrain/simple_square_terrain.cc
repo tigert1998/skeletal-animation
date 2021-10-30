@@ -52,7 +52,7 @@ vec3 calcDiffuse(vec3 raw) {
 }
 
 vec3 defaultShading() {
-    vec3 color = vec3(0.20392157f, 0.92156863f, 0.77647059f);
+    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
     return color * 0.2 + calcDiffuse(color);
 }
 
@@ -61,7 +61,8 @@ void main() {
 }
 )";
 
-SimpleSquareTerrain::SimpleSquareTerrain(int size) : size_(size) {
+SimpleSquareTerrain::SimpleSquareTerrain(int size, double length)
+    : size_(size), length_(length) {
   // size * size squares
   perlin_noise_.reset(new PerlinNoise(1024, 10086));
   shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
@@ -72,11 +73,12 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size) : size_(size) {
     for (int j = 0; j <= size; j++) {
       double x = 1.0 * i / size;
       double z = 1.0 * j / size;
-      double y = get_height(x, z);
+      double y = get_height(x * length_, z * length_);
+      auto normal = get_normal(x * length_, z * length_);
       Vertex<0> vertex{
-          .position = glm::vec3(x, y, z),
+          .position = glm::vec3(x * length_, y, z * length_),
           .tex_coord = glm::vec2(x, z),
-          .normal = glm::vec3(0, 1, 0),
+          .normal = normal,
       };
       vertices.push_back(vertex);
     }
@@ -128,6 +130,11 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size) : size_(size) {
 
 double SimpleSquareTerrain::get_height(double x, double y) {
   return perlin_noise_->Noise(x, y, 0);
+}
+
+glm::vec3 SimpleSquareTerrain::get_normal(double x, double y) {
+  auto vec = perlin_noise_->DerivativeNoise(x, y, 0);
+  return glm::normalize(glm::vec3(-vec.x, 1, -vec.y));
 }
 
 void SimpleSquareTerrain::Draw(Camera *camera_ptr,
