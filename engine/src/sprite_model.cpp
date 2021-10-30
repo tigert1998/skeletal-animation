@@ -299,26 +299,7 @@ REG_TEX(Emissive)
 REG_TEX(BaseColor)
 
 #undef REG_TEX
-
-struct DirectionalLight {
-    vec3 dir;
-    vec3 color;
-};
-
-struct PointLight {
-    vec3 pos;
-    vec3 color;
-};
-
-#define REG_LIGHT(name, count) \
-    uniform int u##name##LightCount;      \
-    uniform name##Light u##name##Lights[count];
-
-REG_LIGHT(Directional, 1)
-REG_LIGHT(Point, 8)
-
-#undef REG_LIGHT
-
+)" + LightSources::kFsSource + R"(
 uniform bool uDefaultShading;
 
 out vec4 fragColor;

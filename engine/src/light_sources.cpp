@@ -16,7 +16,8 @@ Point::Point(glm::vec3 pos, glm::vec3 color) : pos_(pos), color_(color) {}
 
 void Point::Set(Shader *shader) {
   int32_t id = shader->GetUniform<int32_t>("uPointLightCount");
-  std::string var = std::string("uPointLights") + "[" + std::to_string(id) + "]";
+  std::string var =
+      std::string("uPointLights") + "[" + std::to_string(id) + "]";
   shader->SetUniform<glm::vec3>(var + ".pos", pos_);
   shader->SetUniform<glm::vec3>(var + ".color", color_);
   shader->SetUniform<int32_t>("uPointLightCount", id + 1);
@@ -35,3 +36,24 @@ void LightSources::Set(Shader *shader) {
     lights_[i]->Set(shader);
   }
 }
+
+std::string LightSources::kFsSource = R"(
+struct DirectionalLight {
+    vec3 dir;
+    vec3 color;
+};
+
+struct PointLight {
+    vec3 pos;
+    vec3 color;
+};
+
+#define REG_LIGHT(name, count) \
+    uniform int u##name##LightCount;      \
+    uniform name##Light u##name##Lights[count];
+
+REG_LIGHT(Directional, 1)
+REG_LIGHT(Point, 8)
+
+#undef REG_LIGHT
+)";

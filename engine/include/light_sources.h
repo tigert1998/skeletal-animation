@@ -40,4 +40,6 @@ class LightSources : public Light {
   void Add(std::unique_ptr<Light> light);
   void Set(Shader *shader) override;
   inline ~LightSources() override {}
+
+  static std::string kFsSource;
 };
