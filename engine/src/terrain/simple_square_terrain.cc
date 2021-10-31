@@ -81,11 +81,10 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
       double z = 1.0 * j / size;
       double y = get_height(x * length_, z * length_);
       auto normal = get_normal(x * length_, z * length_);
-      Vertex<0> vertex{
-          .position = glm::vec3(x * length_, y, z * length_),
-          .tex_coord = glm::vec2(x, z),
-          .normal = normal,
-      };
+      Vertex<0> vertex;
+      vertex.position = glm::vec3(x * length_, y, z * length_);
+      vertex.tex_coord = glm::vec2(x, z);
+      vertex.normal = normal;
       vertices.push_back(vertex);
     }
 
