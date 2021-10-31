@@ -1,6 +1,7 @@
 #include "terrain/simple_square_terrain.h"
 
 #include <glad/glad.h>
+#include <glog/logging.h>
 
 #include <vector>
 
