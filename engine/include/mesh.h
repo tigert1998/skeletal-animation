@@ -10,6 +10,7 @@
 
 #include <assimp/scene.h>
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -25,8 +26,10 @@ class Mesh {
   ~Mesh();
   void Draw(Shader *shader_ptr) const;
   inline std::string name() { return name_; }
+  void AppendTransform(glm::mat4 transform);
 
  private:
+  std::vector<glm::mat4> transforms_;
   uint32_t vao_, vbo_, ebo_, indices_size_;
   std::string name_;
   bool has_bone_ = false;
