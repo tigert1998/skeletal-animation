@@ -1,5 +1,7 @@
 project(third-party)
 
+option(USE_SYSTEM_ASSIMP "Use system assimp" OFF)
+
 # glfw
 add_subdirectory("glfw")
 
@@ -14,7 +16,14 @@ add_library(glad STATIC "${glad_dir}/src/glad.c")
 target_include_directories(glad PUBLIC "${glad_dir}/include")
 
 # assimp
-add_subdirectory(assimp)
+if(USE_SYSTEM_ASSIMP)
+    find_package(assimp REQUIRED)
+    add_library(assimp INTERFACE)
+    target_include_directories(assimp INTERFACE "${ASSIMP_INCLUDE_DIRS}")
+    target_link_libraries(assimp INTERFACE "${ASSIMP_LIBRARY_DIRS}/${ASSIMP_LIBRARIES}")
+else()
+    add_subdirectory(assimp)
+endif()
 
 # stb
 set(stb_dir "stb")

@@ -22,7 +22,7 @@
 using namespace glm;
 
 constexpr int kMaxBonesPerVertex = 12;
-constexpr int kMaxTransforms = 20;
+
 using VertexWithBones = Vertex<kMaxBonesPerVertex>;
 
 Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
@@ -142,7 +142,6 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
 
 void Mesh::AppendTransform(glm::mat4 transform) {
   transforms_.push_back(transform);
-  CHECK(transforms_.size() <= kMaxTransforms);
 }
 
 Mesh::~Mesh() {
@@ -175,7 +174,8 @@ void Mesh::Draw(Shader *shader_ptr) const {
     }
   }
 
-  shader_ptr->SetUniform<std::vector<glm::mat4>>("uTransforms", transforms_);
+  CHECK(transforms_.size() == 1);
+  shader_ptr->SetUniform<glm::mat4>("uTransform", transforms_[0]);
 
   glBindVertexArray(vao_);
   glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);

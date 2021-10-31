@@ -262,7 +262,7 @@ uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uBoneMatrices[MAX_BONES];
-uniform mat4 uTransforms[MAX_INSTANCES];
+uniform mat4 uTransform;
 
 mat4 CalcBoneMatrix() {
     mat4 boneMatrix = mat4(0);
@@ -286,7 +286,7 @@ void main() {
     if (uAnimated) {
       transform = CalcBoneMatrix();
     } else {
-      transform = uTransforms[0];
+      transform = uTransform;
     }
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * transform * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * transform * vec4(aPosition, 1));
