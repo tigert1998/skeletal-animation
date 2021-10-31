@@ -12,7 +12,8 @@ class SimpleSquareTerrain {
   std::unique_ptr<PerlinNoise> perlin_noise_;
   int size_;
   double length_;
-  uint32_t vao_, vbo_, ebo_, indices_size_;
+  double ratio_;
+  uint32_t vao_, vbo_, ebo_, indices_size_, texture_id_;
   std::unique_ptr<Shader> shader_;
 
   double get_height(double x, double y);
@@ -21,7 +22,7 @@ class SimpleSquareTerrain {
   static const std::string kVsSource, kFsSource;
 
  public:
-  SimpleSquareTerrain(int size, double length);
+  SimpleSquareTerrain(int size, double length, const std::string &texture_path);
 
   void Draw(Camera *camera_ptr, LightSources *light_sources);
 };

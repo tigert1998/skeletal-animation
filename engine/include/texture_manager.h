@@ -15,4 +15,6 @@
 class TextureManager {
  public:
   static uint32_t LoadTexture(const std::string &path);
+
+  static uint32_t LoadTexture(const std::string &path, uint32_t wrap);
 };

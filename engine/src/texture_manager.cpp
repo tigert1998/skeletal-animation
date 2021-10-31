@@ -26,6 +26,10 @@ using std::string;
 using std::vector;
 
 uint32_t TextureManager::LoadTexture(const std::string& path) {
+  return LoadTexture(path, GL_CLAMP_TO_BORDER);
+}
+
+uint32_t TextureManager::LoadTexture(const std::string& path, uint32_t wrap) {
   uint32_t texture;
   static map<string, uint32_t> memory;
   if (memory.count(path.c_str())) return memory[path.c_str()];
@@ -38,8 +42,8 @@ uint32_t TextureManager::LoadTexture(const std::string& path) {
 
   glBindTexture(GL_TEXTURE_2D, texture);
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

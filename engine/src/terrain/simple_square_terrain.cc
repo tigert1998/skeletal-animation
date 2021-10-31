@@ -4,6 +4,7 @@
 
 #include <vector>
 
+#include "texture_manager.h"
 #include "vertex.h"
 
 const std::string SimpleSquareTerrain::kVsSource = R"(
@@ -37,6 +38,9 @@ in vec3 vNormal;
 )" + LightSources::kFsSource + R"(
 out vec4 fragColor;
 
+uniform float uLength;
+uniform sampler2D uTerrainTexture;
+
 vec3 calcDiffuse(vec3 raw) {
     vec3 normal = normalize(vNormal);
     vec3 ans = vec3(0);
@@ -57,15 +61,17 @@ vec3 defaultShading() {
 }
 
 void main() {
-    fragColor = vec4(defaultShading(), 1);
+    fragColor = vec4(calcDiffuse(texture(uTerrainTexture, vTexCoord * uLength).rgb), 1);
 }
 )";
 
-SimpleSquareTerrain::SimpleSquareTerrain(int size, double length)
-    : size_(size), length_(length) {
+SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
+                                         const std::string &texture_path)
+    : size_(size), length_(length), ratio_(0.25) {
   // size * size squares
   perlin_noise_.reset(new PerlinNoise(1024, 10086));
   shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
+  texture_id_ = TextureManager::LoadTexture(texture_path, GL_REPEAT);
 
   std::vector<Vertex<0>> vertices;
   vertices.reserve((size + 1) * (size + 1));
@@ -129,12 +135,12 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length)
 }
 
 double SimpleSquareTerrain::get_height(double x, double y) {
-  return perlin_noise_->Noise(x, y, 0);
+  return perlin_noise_->Noise(x * ratio_, y * ratio_, 0);
 }
 
 glm::vec3 SimpleSquareTerrain::get_normal(double x, double y) {
-  auto vec = perlin_noise_->DerivativeNoise(x, y, 0);
-  return glm::normalize(glm::vec3(-vec.x, 1, -vec.y));
+  auto vec = perlin_noise_->DerivativeNoise(x * ratio_, y * ratio_, 0);
+  return glm::normalize(glm::vec3(-vec.x * ratio_, 1, -vec.y * ratio_));
 }
 
 void SimpleSquareTerrain::Draw(Camera *camera_ptr,
@@ -148,6 +154,11 @@ void SimpleSquareTerrain::Draw(Camera *camera_ptr,
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera_ptr->projection_matrix());
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture_id_);
+  shader_->SetUniform<int32_t>("uTerrainTexture", 0);
+  shader_->SetUniform<float>("uLength", length_);
 
   glBindVertexArray(vao_);
   glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
