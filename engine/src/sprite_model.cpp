@@ -11,6 +11,7 @@
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <glad/glad.h>
+#include <glog/logging.h>
 
 #include <assimp/Importer.hpp>
 #include <glm/gtc/matrix_transform.hpp>

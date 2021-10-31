@@ -34,6 +34,7 @@ uint32_t TextureManager::LoadTexture(const std::string& path, uint32_t wrap) {
   uint32_t texture;
   static map<string, uint32_t> memory;
   if (memory.count(path.c_str())) return memory[path.c_str()];
+  LOG(INFO) << "loading texture at: \"" << path << "\"";
   int w, h, comp;
   stbi_set_flip_vertically_on_load(true);
   unsigned char* image = stbi_load(path.c_str(), &w, &h, &comp, 0);

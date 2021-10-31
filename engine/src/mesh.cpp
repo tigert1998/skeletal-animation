@@ -40,7 +40,6 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     textures_[#name].enabled = true;                                       \
     material->GetTexture(aiTextureType_##name, 0, &material_texture_path); \
     auto basename = BaseName(material_texture_path.C_Str());               \
-    LOG(INFO) << #name " texture is enabled: \"" << basename << "\"";      \
     auto item = path + "/textures/" + basename;                            \
     textures_[#name].id = TextureManager::LoadTexture(item);               \
   } while (0)

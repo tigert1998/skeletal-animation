@@ -62,7 +62,8 @@ vec3 defaultShading() {
 }
 
 void main() {
-    fragColor = vec4(calcDiffuse(texture(uTerrainTexture, vTexCoord * uLength).rgb), 1);
+    vec3 raw = texture(uTerrainTexture, vTexCoord * uLength).rgb;
+    fragColor = vec4(calcDiffuse(raw) * 0.7 + raw * 0.3, 1);
 }
 )";
 
