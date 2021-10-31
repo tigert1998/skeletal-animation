@@ -1,6 +1,6 @@
 //
 //  model.h
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/2.
 //  Copyright © 2018 tigertang. All rights reserved.
@@ -46,7 +46,7 @@ class SpriteModel {
   std::map<std::pair<uint32_t, std::string>, uint32_t> animation_channel_map_;
   bool default_shading_ = false;
 
-  void RecursivelyInitNodes(aiNode *node);
+  void RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform);
   void RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
                                      glm::mat4 transform, double ticks);
 

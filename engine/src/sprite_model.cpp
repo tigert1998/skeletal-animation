@@ -1,6 +1,6 @@
 //
 //  model.cpp
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/2.
 //  Copyright © 2018 tigertang. All rights reserved.
@@ -11,6 +11,7 @@
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <glad/glad.h>
+#include <glog/logging.h>
 
 #include <assimp/Importer.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -46,7 +47,8 @@ SpriteModel::SpriteModel(const std::string &path,
     }
   }
 
-  RecursivelyInitNodes(scene_->mRootNode);
+  mesh_ptrs_.resize(scene_->mNumMeshes);
+  RecursivelyInitNodes(scene_->mRootNode, mat4(1));
   bone_matrices_.resize(bone_namer_.total());
 }
 
@@ -59,16 +61,24 @@ bool SpriteModel::NodeShouldBeFiltered(const std::string &name) {
   return false;
 }
 
-void SpriteModel::RecursivelyInitNodes(aiNode *node) {
+void SpriteModel::RecursivelyInitNodes(aiNode *node,
+                                       glm::mat4 parent_transform) {
+  auto transform =
+      parent_transform * Mat4FromAimatrix4x4(node->mTransformation);
+
   if (!NodeShouldBeFiltered(node->mName.C_Str())) {
     for (int i = 0; i < node->mNumMeshes; i++) {
-      auto mesh = scene_->mMeshes[node->mMeshes[i]];
-      mesh_ptrs_.emplace_back(make_shared<Mesh>(directory_path_, mesh, scene_,
-                                                bone_namer_, bone_offsets_));
+      int id = node->mMeshes[i];
+      if (mesh_ptrs_[id] == nullptr) {
+        auto mesh = scene_->mMeshes[id];
+        mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
+                                           bone_namer_, bone_offsets_);
+      }
+      mesh_ptrs_[id]->AppendTransform(transform);
     }
   }
   for (int i = 0; i < node->mNumChildren; i++) {
-    RecursivelyInitNodes(node->mChildren[i]);
+    RecursivelyInitNodes(node->mChildren[i], transform);
   }
 }
 
@@ -216,9 +226,10 @@ void SpriteModel::InternalDraw(bool animated, Camera *camera_ptr,
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
-  for (const auto &mesh_ptr : mesh_ptrs_) {
+  for (int i = 0; i < mesh_ptrs_.size(); i++) {
+    if (mesh_ptrs_[i] == nullptr) continue;
     shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
-    mesh_ptr->Draw(shader_ptr_.get());
+    mesh_ptrs_[i]->Draw(shader_ptr_.get());
   }
 }
 
@@ -230,6 +241,7 @@ const std::string SpriteModel::kVsSource = R"(
 #version 410 core
 
 const int MAX_BONES = 100;
+const int MAX_INSTANCES = 20;
 
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec2 aTexCoord;
@@ -250,6 +262,7 @@ uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uBoneMatrices[MAX_BONES];
+uniform mat4 uTransforms[MAX_INSTANCES];
 
 mat4 CalcBoneMatrix() {
     mat4 boneMatrix = mat4(0);
@@ -269,14 +282,16 @@ mat4 CalcBoneMatrix() {
 }
 
 void main() {
-    mat4 boneMatrix = mat4(1);
+    mat4 transform;
     if (uAnimated) {
-      boneMatrix = CalcBoneMatrix();
+      transform = CalcBoneMatrix();
+    } else {
+      transform = uTransforms[0];
     }
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * boneMatrix * vec4(aPosition, 1);
-    vPosition = vec3(uModelMatrix * boneMatrix * vec4(aPosition, 1));
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * transform * vec4(aPosition, 1);
+    vPosition = vec3(uModelMatrix * transform * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
-    vNormal = vec3(uModelMatrix * boneMatrix * vec4(aNormal, 0));
+    vNormal = vec3(uModelMatrix * transform * vec4(aNormal, 0));
 }
 )";
 
@@ -299,26 +314,7 @@ REG_TEX(Emissive)
 REG_TEX(BaseColor)
 
 #undef REG_TEX
-
-struct DirectionalLight {
-    vec3 dir;
-    vec3 color;
-};
-
-struct PointLight {
-    vec3 pos;
-    vec3 color;
-};
-
-#define REG_LIGHT(name, count) \
-    uniform int u##name##LightCount;      \
-    uniform name##Light u##name##Lights[count];
-
-REG_LIGHT(Directional, 1)
-REG_LIGHT(Point, 8)
-
-#undef REG_LIGHT
-
+)" + LightSources::kFsSource + R"(
 uniform bool uDefaultShading;
 
 out vec4 fragColor;

@@ -1,6 +1,6 @@
 //
 //  shader.cpp
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/3.
 //  Copyright © 2018 tigertang. All rights reserved.
@@ -127,6 +127,7 @@ void Shader::SetUniform<std::vector<glm::mat4>>(
     const std::string &identifier, const std::vector<glm::mat4> &value) const {
   auto location = glGetUniformLocation(id, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
+  if (value.size() == 0) return;
   glUniformMatrix4fv(location, value.size(), GL_FALSE,
                      glm::value_ptr(value[0]));
 }

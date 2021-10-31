@@ -1,6 +1,6 @@
 //
 //  texture_manager.h
-//  skinned-animation
+//  skeletal-animation
 //
 //  Created by tigertang on 2018/8/3.
 //  Copyright © 2018 tigertang. All rights reserved.
@@ -15,4 +15,6 @@
 class TextureManager {
  public:
   static uint32_t LoadTexture(const std::string &path);
+
+  static uint32_t LoadTexture(const std::string &path, uint32_t wrap);
 };

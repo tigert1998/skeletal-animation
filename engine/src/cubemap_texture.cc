@@ -29,10 +29,12 @@ void CubemapTexture::Load() {
     unsigned char* image = stbi_load(image_path.c_str(), &w, &h, &comp, 0);
     if (image == nullptr) throw LoadPictureError(image_path.c_str());
 
-    if (comp == 3)
+    if (comp == 3) {
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
       glTexImage2D(kTypes[i].first, 0, GL_RGB, w, h, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, image);
-    else if (comp == 4)
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    } else if (comp == 4)
       glTexImage2D(kTypes[i].first, 0, GL_RGB, w, h, 0, GL_RGBA,
                    GL_UNSIGNED_BYTE, image);
 
