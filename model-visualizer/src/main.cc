@@ -20,8 +20,9 @@
 #include <memory>
 
 #include "keyboard.h"
+#include "model.h"
 #include "skybox.h"
-#include "sprite_model.h"
+#include "terrain/simple_square_terrain.h"
 #include "wall.h"
 
 uint32_t width = 1000, height = 600;
@@ -29,7 +30,7 @@ uint32_t width = 1000, height = 600;
 using namespace glm;
 using namespace std;
 
-std::unique_ptr<SpriteModel> sprite_model_ptr;
+std::unique_ptr<Model> model_ptr;
 std::unique_ptr<Camera> camera_ptr;
 std::unique_ptr<LightSources> light_sources_ptr;
 std::unique_ptr<Skybox> skybox_ptr;
@@ -76,10 +77,10 @@ void ImGuiWindow() {
   char buf[1 << 10] = {0};
   static int prev_animation_id = animation_id;
   const char *default_shading_choices[] = {"off", "on"};
-  int default_shading_choice = sprite_model_ptr->default_shading() ? 1 : 0;
+  int default_shading_choice = model_ptr->default_shading() ? 1 : 0;
 
   if (prev_animation_id != animation_id) {
-    if (0 <= animation_id && animation_id < sprite_model_ptr->NumAnimations()) {
+    if (0 <= animation_id && animation_id < model_ptr->NumAnimations()) {
       LOG(INFO) << "switching to animation #" << animation_id;
     } else {
       LOG(INFO) << "deactivate animation";
@@ -96,7 +97,7 @@ void ImGuiWindow() {
   if (ImGui::InputText("model path", buf, sizeof(buf),
                        ImGuiInputTextFlags_EnterReturnsTrue)) {
     LOG(INFO) << "loading model: " << buf;
-    sprite_model_ptr.reset(new SpriteModel(buf, std::vector<std::string>()));
+    model_ptr.reset(new Model(buf, std::vector<std::string>()));
     animation_time = 0;
   }
   ImGui::InputInt("animation id", &animation_id, 1, 1);
@@ -109,7 +110,7 @@ void ImGuiWindow() {
   camera_ptr->set_front(vec3(f_arr[0], f_arr[1], f_arr[2]));
   camera_ptr->set_alpha(alpha);
   camera_ptr->set_beta(beta);
-  sprite_model_ptr->set_default_shading(default_shading_choice == 1);
+  model_ptr->set_default_shading(default_shading_choice == 1);
 }
 
 void Init() {
@@ -135,8 +136,8 @@ void Init() {
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
 
-  sprite_model_ptr = make_unique<SpriteModel>(
-      "models/phoenix-bird/source/fly.fbx", std::vector<std::string>());
+  model_ptr = make_unique<Model>("models/phoenix-bird/source/fly.fbx",
+                                 std::vector<std::string>());
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
   skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");
@@ -192,12 +193,11 @@ int main(int argc, char *argv[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     skybox_ptr->Draw(camera_ptr.get());
-    if (animation_id < 0 || animation_id >= sprite_model_ptr->NumAnimations()) {
-      sprite_model_ptr->Draw(camera_ptr.get(), light_sources_ptr.get(),
-                             mat4(1));
+    if (animation_id < 0 || animation_id >= model_ptr->NumAnimations()) {
+      model_ptr->Draw(camera_ptr.get(), light_sources_ptr.get(), mat4(1));
     } else {
-      sprite_model_ptr->Draw(0, animation_time, camera_ptr.get(),
-                             light_sources_ptr.get(), mat4(1));
+      model_ptr->Draw(0, animation_time, camera_ptr.get(),
+                      light_sources_ptr.get(), mat4(1));
     }
 
     ImGui_ImplGlfw_NewFrame();

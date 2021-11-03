@@ -6,7 +6,7 @@
 //  Copyright © 2018 tigertang. All rights reserved.
 //
 
-#include "sprite_model.h"
+#include "model.h"
 
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
@@ -27,15 +27,15 @@ using std::vector;
 using namespace Assimp;
 using namespace glm;
 
-SpriteModel::SpriteModel(const std::string &path,
-                         const std::vector<std::string> &filtered_node_names)
+Model::Model(const std::string &path,
+             const std::vector<std::string> &filtered_node_names)
     : directory_path_(ParentPath(ParentPath(path))),
       filtered_node_names_(filtered_node_names) {
   scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale |
                                           aiProcess_CalcTangentSpace |
                                           aiProcess_Triangulate);
   shader_ptr_ = shared_ptr<Shader>(
-      new Shader(Shader::SRC, SpriteModel::kVsSource, SpriteModel::kFsSource));
+      new Shader(Shader::SRC, Model::kVsSource, Model::kFsSource));
 
   animation_channel_map_.clear();
   for (int i = 0; i < scene_->mNumAnimations; i++) {
@@ -48,21 +48,22 @@ SpriteModel::SpriteModel(const std::string &path,
   }
 
   mesh_ptrs_.resize(scene_->mNumMeshes);
+  LOG(INFO) << "#meshes: " << mesh_ptrs_.size();
+  LOG(INFO) << "#animations: " << scene_->mNumAnimations;
   RecursivelyInitNodes(scene_->mRootNode, mat4(1));
   bone_matrices_.resize(bone_namer_.total());
 }
 
-SpriteModel::~SpriteModel() { aiReleaseImport(scene_); }
+Model::~Model() { aiReleaseImport(scene_); }
 
-bool SpriteModel::NodeShouldBeFiltered(const std::string &name) {
+bool Model::NodeShouldBeFiltered(const std::string &name) {
   for (int i = 0; i < filtered_node_names_.size(); i++) {
     if (name == filtered_node_names_[i]) return true;
   }
   return false;
 }
 
-void SpriteModel::RecursivelyInitNodes(aiNode *node,
-                                       glm::mat4 parent_transform) {
+void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
   auto transform =
       parent_transform * Mat4FromAimatrix4x4(node->mTransformation);
 
@@ -82,8 +83,8 @@ void SpriteModel::RecursivelyInitNodes(aiNode *node,
   }
 }
 
-glm::mat4 SpriteModel::InterpolateTranslationMatrix(aiVectorKey *keys,
-                                                    uint32_t n, double ticks) {
+glm::mat4 Model::InterpolateTranslationMatrix(aiVectorKey *keys, uint32_t n,
+                                              double ticks) {
   static auto mat4_from_aivector3d = [](aiVector3D vector) -> mat4 {
     return translate(mat4(1), vec3(vector.x, vector.y, vector.z));
   };
@@ -107,8 +108,8 @@ glm::mat4 SpriteModel::InterpolateTranslationMatrix(aiVectorKey *keys,
                               right_ptr->mValue * factor);
 }
 
-glm::mat4 SpriteModel::InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n,
-                                                 double ticks) {
+glm::mat4 Model::InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n,
+                                           double ticks) {
   static auto mat4_from_aiquaternion = [](aiQuaternion quaternion) -> mat4 {
     auto rotation_matrix = quaternion.GetMatrix();
     mat4 res(1);
@@ -136,8 +137,8 @@ glm::mat4 SpriteModel::InterpolateRotationMatrix(aiQuatKey *keys, uint32_t n,
   return mat4_from_aiquaternion(out);
 }
 
-glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n,
-                                                double ticks) {
+glm::mat4 Model::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n,
+                                          double ticks) {
   static auto mat4_from_aivector3d = [](aiVector3D vector) -> mat4 {
     return scale(mat4(1), vec3(vector.x, vector.y, vector.z));
   };
@@ -161,11 +162,10 @@ glm::mat4 SpriteModel::InterpolateScalingMatrix(aiVectorKey *keys, uint32_t n,
                               right_ptr->mValue * factor);
 }
 
-int SpriteModel::NumAnimations() const { return scene_->mNumAnimations; }
+int Model::NumAnimations() const { return scene_->mNumAnimations; }
 
-void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
-                                                glm::mat4 transform,
-                                                double ticks) {
+void Model::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
+                                          glm::mat4 transform, double ticks) {
   string node_name = node->mName.C_Str();
   auto animation = scene_->mAnimations[animation_id];
   mat4 current_transform;
@@ -199,22 +199,21 @@ void SpriteModel::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
   }
 }
 
-void SpriteModel::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
-                       LightSources *light_sources, mat4 model_matrix) {
+void Model::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
+                 LightSources *light_sources, mat4 model_matrix) {
   RecursivelyUpdateBoneMatrices(
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   InternalDraw(true, camera_ptr, light_sources, model_matrix);
 }
 
-void SpriteModel::Draw(Camera *camera_ptr, LightSources *light_sources,
-                       mat4 model_matrix) {
+void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
+                 mat4 model_matrix) {
   InternalDraw(false, camera_ptr, light_sources, model_matrix);
 }
 
-void SpriteModel::InternalDraw(bool animated, Camera *camera_ptr,
-                               LightSources *light_sources,
-                               glm::mat4 model_matrix) {
+void Model::InternalDraw(bool animated, Camera *camera_ptr,
+                         LightSources *light_sources, glm::mat4 model_matrix) {
   shader_ptr_->Use();
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
@@ -233,11 +232,11 @@ void SpriteModel::InternalDraw(bool animated, Camera *camera_ptr,
   }
 }
 
-void SpriteModel::set_default_shading(bool default_shading) {
+void Model::set_default_shading(bool default_shading) {
   default_shading_ = default_shading;
 }
 
-const std::string SpriteModel::kVsSource = R"(
+const std::string Model::kVsSource = R"(
 #version 410 core
 
 const int MAX_BONES = 100;
@@ -295,7 +294,7 @@ void main() {
 }
 )";
 
-const std::string SpriteModel::kFsSource = R"(
+const std::string Model::kFsSource = R"(
 #version 410 core
 
 const float zero = 0.00000001;

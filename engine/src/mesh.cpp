@@ -65,12 +65,20 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
 #undef TRY_ADD_TEXTURE
 #undef TRY_ADD_TEXTURE_WITH_BASE_COLOR
   }
+
+  LOG(INFO) << "\"" << name() << "\": #vertices: " << mesh->mNumVertices
+            << ", #faces: " << mesh->mNumFaces;
+
+  vertices.reserve(mesh->mNumVertices);
+  indices.reserve(mesh->mNumFaces * 3);
   for (int i = 0; i < mesh->mNumVertices; i++) {
     auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-    vertex.tex_coord =
-        vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+    if (mesh->HasTextureCoords(0)) {
+      vertex.tex_coord =
+          vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+    }
     vertex.normal =
         vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
     vertices.push_back(vertex);

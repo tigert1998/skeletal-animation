@@ -21,12 +21,12 @@
 #include "namer.h"
 #include "shader.h"
 
-class SpriteModel {
+class Model {
  public:
-  SpriteModel() = delete;
-  SpriteModel(const std::string &path,
-              const std::vector<std::string> &filtered_node_names);
-  ~SpriteModel();
+  Model() = delete;
+  Model(const std::string &path,
+        const std::vector<std::string> &filtered_node_names);
+  ~Model();
   void Draw(Camera *camera_ptr, LightSources *light_sources,
             glm::mat4 model_matrix);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
