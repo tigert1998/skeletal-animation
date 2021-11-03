@@ -73,10 +73,12 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
 
   vertices.reserve(mesh->mNumVertices);
   indices.reserve(mesh->mNumFaces * 3);
+  center_ = glm::vec3(0);
   for (int i = 0; i < mesh->mNumVertices; i++) {
     auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+    center_ += vertex.position;
     if (mesh->HasTextureCoords(0)) {
       vertex.tex_coord =
           vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
@@ -87,6 +89,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     }
     vertices.push_back(vertex);
   }
+  center_ /= mesh->mNumVertices;
   for (int i = 0; i < mesh->mNumFaces; i++) {
     auto face = mesh->mFaces[i];
     for (int j = 0; j < face.mNumIndices; j++)
