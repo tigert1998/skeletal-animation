@@ -72,10 +72,18 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
       int id = node->mMeshes[i];
       if (mesh_ptrs_[id] == nullptr) {
         auto mesh = scene_->mMeshes[id];
-        mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
-                                           bone_namer_, bone_offsets_);
+        try {
+          mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
+                                             bone_namer_, bone_offsets_);
+        } catch (std::exception &e) {
+          mesh_ptrs_[id] = nullptr;
+          LOG(WARNING) << "not loading mesh \"" << mesh->mName.C_Str()
+                       << "\" because an exception is thrown: " << e.what();
+        }
       }
-      mesh_ptrs_[id]->AppendTransform(transform);
+      if (mesh_ptrs_[id] != nullptr) {
+        mesh_ptrs_[id]->AppendTransform(transform);
+      }
     }
   }
   for (int i = 0; i < node->mNumChildren; i++) {
