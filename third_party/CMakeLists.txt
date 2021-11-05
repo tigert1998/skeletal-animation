@@ -45,4 +45,11 @@ add_library(imgui STATIC "${imgui_srcs}")
 target_link_libraries(imgui glfw)
 target_include_directories(imgui PUBLIC "${imgui_dir}")
 
+# glog
 add_subdirectory(glog)
+
+# bullet3
+find_package(Bullet REQUIRED)
+add_library(bullet INTERFACE)
+target_include_directories(bullet INTERFACE "${BULLET_INCLUDE_DIR}")
+target_link_libraries(bullet INTERFACE "${BULLET_LIBRARIES}")

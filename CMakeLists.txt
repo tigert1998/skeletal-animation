@@ -13,4 +13,4 @@ add_executable(model-visualizer "model-visualizer/src/main.cc")
 target_link_libraries(model-visualizer engine glog::glog)
 
 add_executable(sample-game "sample-game/src/main.cc")
-target_link_libraries(sample-game engine glog::glog)
+target_link_libraries(sample-game engine glog::glog bullet)
