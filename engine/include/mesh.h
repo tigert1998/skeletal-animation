@@ -27,12 +27,18 @@ class Mesh {
   void Draw(Shader *shader_ptr) const;
   inline std::string name() { return name_; }
   void AppendTransform(glm::mat4 transform);
+  inline glm::vec3 center(glm::mat4 *bone_matrix) {
+    glm::mat4 transform =
+        bone_matrix == nullptr || !has_bone_ ? transforms_[0] : *bone_matrix;
+    return transform * glm::vec4(center_, 1);
+  }
 
  private:
   std::vector<glm::mat4> transforms_;
   uint32_t vao_, vbo_, ebo_, indices_size_;
   std::string name_;
   bool has_bone_ = false;
+  glm::vec3 center_;
 
   struct TextureRecord {
     bool enabled;

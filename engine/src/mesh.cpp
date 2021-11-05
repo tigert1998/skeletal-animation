@@ -67,22 +67,29 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
   }
 
   LOG(INFO) << "\"" << name() << "\": #vertices: " << mesh->mNumVertices
-            << ", #faces: " << mesh->mNumFaces;
+            << ", #faces: " << mesh->mNumFaces << ", has tex coords? "
+            << std::boolalpha << mesh->HasTextureCoords(0) << ", has normals? "
+            << mesh->HasNormals();
 
   vertices.reserve(mesh->mNumVertices);
   indices.reserve(mesh->mNumFaces * 3);
+  center_ = glm::vec3(0);
   for (int i = 0; i < mesh->mNumVertices; i++) {
     auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+    center_ += vertex.position;
     if (mesh->HasTextureCoords(0)) {
       vertex.tex_coord =
           vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
     }
-    vertex.normal =
-        vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+    if (mesh->HasNormals()) {
+      vertex.normal =
+          vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+    }
     vertices.push_back(vertex);
   }
+  center_ /= mesh->mNumVertices;
   for (int i = 0; i < mesh->mNumFaces; i++) {
     auto face = mesh->mFaces[i];
     for (int j = 0; j < face.mNumIndices; j++)

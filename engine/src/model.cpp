@@ -72,10 +72,18 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
       int id = node->mMeshes[i];
       if (mesh_ptrs_[id] == nullptr) {
         auto mesh = scene_->mMeshes[id];
-        mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
-                                           bone_namer_, bone_offsets_);
+        try {
+          mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
+                                             bone_namer_, bone_offsets_);
+        } catch (std::exception &e) {
+          mesh_ptrs_[id] = nullptr;
+          LOG(WARNING) << "not loading mesh \"" << mesh->mName.C_Str()
+                       << "\" because an exception is thrown: " << e.what();
+        }
       }
-      mesh_ptrs_[id]->AppendTransform(transform);
+      if (mesh_ptrs_[id] != nullptr) {
+        mesh_ptrs_[id]->AppendTransform(transform);
+      }
     }
   }
   for (int i = 0; i < node->mNumChildren; i++) {
@@ -225,10 +233,23 @@ void Model::InternalDraw(bool animated, Camera *camera_ptr,
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
-  for (int i = 0; i < mesh_ptrs_.size(); i++) {
-    if (mesh_ptrs_[i] == nullptr) continue;
+  std::vector<std::pair<int, glm::vec3>> order;
+  order.reserve(mesh_ptrs_.size());
+  for (int i = 0; i < mesh_ptrs_.size(); i++)
+    if (mesh_ptrs_[i] != nullptr) {
+      glm::vec3 pos =
+          camera_ptr->view_matrix() * model_matrix *
+          vec4(mesh_ptrs_[i]->center(animated ? &bone_matrices_[0] : nullptr),
+               1);
+      order.emplace_back(i, pos);
+    }
+  std::sort(order.begin(), order.end(), [](const auto &x, const auto &y) {
+    return x.second.z < y.second.z;
+  });
+
+  for (int i = 0; i < order.size(); i++) {
     shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
-    mesh_ptrs_[i]->Draw(shader_ptr_.get());
+    mesh_ptrs_[order[i].first]->Draw(shader_ptr_.get());
   }
 }
 
