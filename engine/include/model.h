@@ -29,6 +29,8 @@ class Model {
   ~Model();
   void Draw(Camera *camera_ptr, LightSources *light_sources,
             glm::mat4 model_matrix);
+  void Draw(Camera *camera_ptr, LightSources *light_sources,
+            std::vector<glm::mat4> model_matrices);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
             LightSources *light_sources, glm::mat4 model_matrix);
   int NumAnimations() const;
@@ -42,6 +44,7 @@ class Model {
   const aiScene *scene_;
   std::shared_ptr<Shader> shader_ptr_;
   Namer bone_namer_;
+  uint32_t vbo_;
   std::vector<glm::mat4> bone_matrices_, bone_offsets_;
   std::map<std::pair<uint32_t, std::string>, uint32_t> animation_channel_map_;
   bool default_shading_ = false;
@@ -59,7 +62,8 @@ class Model {
 
   bool NodeShouldBeFiltered(const std::string &name);
   void InternalDraw(bool animated, Camera *camera_ptr,
-                    LightSources *light_sources, glm::mat4 model_matrix);
+                    LightSources *light_sources,
+                    std::vector<glm::mat4> model_matrices, bool sort_meshes);
 
   static const std::string kVsSource;
   static const std::string kFsSource;

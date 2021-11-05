@@ -170,7 +170,7 @@ Mesh::~Mesh() {
   }
 }
 
-void Mesh::Draw(Shader *shader_ptr) const {
+void Mesh::Draw(Shader *shader_ptr, int num_instances) const {
   if (!has_bone_) {
     shader_ptr->SetUniform<int32_t>("uAnimated", 0);
   }
@@ -193,6 +193,7 @@ void Mesh::Draw(Shader *shader_ptr) const {
   shader_ptr->SetUniform<glm::mat4>("uTransform", transforms_[0]);
 
   glBindVertexArray(vao_);
-  glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
+  glDrawElementsInstanced(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, 0,
+                          num_instances);
   glBindVertexArray(0);
 }
