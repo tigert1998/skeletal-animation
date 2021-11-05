@@ -121,7 +121,7 @@ void Init() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
   window =
-      glfwCreateWindow(width, height, "Skeletal Animation", nullptr, nullptr);
+      glfwCreateWindow(width, height, "Model Visualizer", nullptr, nullptr);
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
@@ -136,8 +136,10 @@ void Init() {
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
 
-  model_ptr = make_unique<Model>("models/phoenix-bird/source/fly.fbx",
-                                 std::vector<std::string>());
+  model_ptr = make_unique<Model>(
+      "models/sprite/source/sprite.fbx",
+      std::vector<std::string>(
+          {"Plane001", "Plane002", "obj53002_LynM001", "objTwoHand13_SM"}));
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
   skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");

@@ -1,12 +1,10 @@
-# Skeletal Animation
-
-This repository is a demo of skeletal animation. I use [assimp](http://assimp.org/) to load `fbx` format model including its binding animation. [glm](https://glm.g-truc.net/) is applied to deal with mathematics related works, mainly about matrix transformations. Rendering is implemented with OpenGL 4.1.
+# Tiger Rendering Engine
 
 ## Build
-
-News: the building system switches from premake to CMake now.
-OpenGL 4.1 is used because 4.1 is the latest version MacOS supports:smile:.
-Use apt to install assimp on ubuntu, brew on MacOS or other package managers.
+This repository follows the standard CMake building procedure.
+Before building, run `configure.py` to download the `glad` package.
+OpenGL 4.1 is used because 4.1 is the latest version MacOS supports.
+So this repository can stay cross-platform.
 
 ```
 # download assimp manually
@@ -14,9 +12,14 @@ python configure.py # download glad
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make
 ```
 
-## Screenshots
+## Model Visualizer
+This visualizer supports skeletal animation.
+Check it out!
 
-![sprite](resources/sprite.png)
+```
+make model-visualizer
+```
+
+![](https://drive.google.com/uc?export=download&id=1Vuf-17OpmJaZwIQadbFFJ6ZEOA8ye0yi)
