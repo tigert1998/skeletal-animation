@@ -14,6 +14,7 @@
 #include <memory>
 #include <random>
 
+#include "debug_drawer.h"
 #include "keyboard.h"
 #include "model.h"
 #include "skybox.h"
@@ -40,6 +41,7 @@ std::unique_ptr<btCollisionDispatcher> dispatcher;
 std::unique_ptr<btBroadphaseInterface> overlapping_pair_cache;
 std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
 std::unique_ptr<btDiscreteDynamicsWorld> dynamics_world;
+std::unique_ptr<DebugDrawer> debug_drawer;
 
 double animation_time = 0;
 int animation_id = -1;
@@ -81,8 +83,8 @@ void ImGuiWindow() {
   float alpha = camera_ptr->alpha();
   float beta = camera_ptr->beta();
   static int prev_animation_id = animation_id;
-  const char *default_shading_choices[] = {"off", "on"};
-  int default_shading_choice = tree->default_shading() ? 1 : 0;
+  const char *debug_mode_choices[] = {"off", "on"};
+  int debug_mode_choice = debug_drawer->getDebugMode() ? 1 : 0;
 
   if (prev_animation_id != animation_id) {
     if (0 <= animation_id && animation_id < tree->NumAnimations()) {
@@ -99,17 +101,15 @@ void ImGuiWindow() {
   ImGui::InputFloat3("camera.front", f_arr);
   ImGui::InputFloat("camera.alpha", &alpha);
   ImGui::InputFloat("camera.beta", &beta);
-  ImGui::InputInt("animation id", &animation_id, 1, 1);
-  ImGui::ListBox("default shading", &default_shading_choice,
-                 default_shading_choices,
-                 IM_ARRAYSIZE(default_shading_choices));
+  ImGui::ListBox("debug mode", &debug_mode_choice, debug_mode_choices,
+                 IM_ARRAYSIZE(debug_mode_choices));
   ImGui::End();
 
   camera_ptr->set_position(vec3(p_arr[0], p_arr[1], p_arr[2]));
   camera_ptr->set_front(vec3(f_arr[0], f_arr[1], f_arr[2]));
   camera_ptr->set_alpha(alpha);
   camera_ptr->set_beta(beta);
-  tree->set_default_shading(default_shading_choice == 1);
+  debug_drawer->setDebugMode(debug_mode_choice == 1);
 }
 
 void InitWorld() {
@@ -147,6 +147,9 @@ void InitWorld() {
 
   dynamics_world->addRigidBody(terrain->rigid_body());
   dynamics_world->addRigidBody(tank->rigid_body());
+
+  debug_drawer.reset(new DebugDrawer());
+  dynamics_world->setDebugDrawer(debug_drawer.get());
 }
 
 void Init() {
@@ -217,6 +220,7 @@ int main(int argc, char *argv[]) {
     glfwPollEvents();
     Keyboard::shared.Elapse(delta_time);
     dynamics_world->stepSimulation(delta_time, 10);
+    dynamics_world->debugDrawWorld();
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -227,6 +231,7 @@ int main(int argc, char *argv[]) {
     tank->Draw(camera_ptr.get(), light_sources_ptr.get());
 
     terrain->Draw(camera_ptr.get(), light_sources_ptr.get());
+    debug_drawer->Draw(camera_ptr.get());
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();

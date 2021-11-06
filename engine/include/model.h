@@ -38,6 +38,9 @@ class Model {
   void set_default_shading(bool default_shading);
   inline bool default_shading() { return default_shading_; }
 
+  inline glm::vec3 min() { return min_; }
+  inline glm::vec3 max() { return max_; }
+
  private:
   std::vector<std::string> filtered_node_names_;
   std::string directory_path_;
