@@ -18,7 +18,7 @@
 #include "model.h"
 #include "skybox.h"
 #include "tank.h"
-#include "terrain/simple_square_terrain.h"
+#include "terrain.h"
 
 uint32_t width = 1000, height = 600;
 
@@ -29,22 +29,17 @@ std::unique_ptr<Model> tree;
 std::unique_ptr<Camera> camera_ptr;
 std::unique_ptr<LightSources> light_sources_ptr;
 std::unique_ptr<Skybox> skybox_ptr;
-std::unique_ptr<SimpleSquareTerrain> terrain_ptr;
 
 std::vector<glm::mat4> tree_model_matrices;
 
 std::unique_ptr<Tank> tank;
+std::unique_ptr<Terrain> terrain;
 
 std::unique_ptr<btDefaultCollisionConfiguration> collision_config;
 std::unique_ptr<btCollisionDispatcher> dispatcher;
 std::unique_ptr<btBroadphaseInterface> overlapping_pair_cache;
 std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
 std::unique_ptr<btDiscreteDynamicsWorld> dynamics_world;
-btAlignedObjectArray<btCollisionShape *> collision_shapes;
-
-std::unique_ptr<btCollisionShape> terrain_shape;
-std::unique_ptr<btDefaultMotionState> terrain_motion_state;
-std::unique_ptr<btRigidBody> terrain_rb;
 
 double animation_time = 0;
 int animation_id = -1;
@@ -126,8 +121,7 @@ void InitWorld() {
       std::vector<std::string>({"Sphere"}));
   tank = make_unique<Tank>(
       "/Users/tigertang/Projects/models/tiger-i/source/tiger1.obj");
-  terrain_ptr = make_unique<SimpleSquareTerrain>(
-      256, 100, "/Users/tigertang/Projects/models/grass.png");
+  terrain = make_unique<Terrain>("/Users/tigertang/Projects/models/grass.png");
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
   skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");
@@ -138,8 +132,8 @@ void InitWorld() {
     auto dis = std::uniform_real_distribution<>(0, 100);
     auto x = dis(rd);
     auto z = dis(rd);
-    tree_model_matrices.push_back(
-        glm::translate(mat4(1), vec3(x, terrain_ptr->get_height(x, z), z)));
+    tree_model_matrices.push_back(glm::translate(
+        mat4(1), vec3(x, terrain->terrain()->get_height(x, z), z)));
   }
 
   collision_config.reset(new btDefaultCollisionConfiguration());
@@ -151,20 +145,8 @@ void InitWorld() {
       collision_config.get()));
   dynamics_world->setGravity(btVector3(0, -9.8, 0));
 
-  {
-    terrain_shape = std::make_unique<btBvhTriangleMeshShape>(
-        terrain_ptr->get_bt_triangle_mesh(), true);
-    btTransform terrain_transform;
-    terrain_transform.setIdentity();
-    terrain_motion_state.reset(new btDefaultMotionState(terrain_transform));
-    btRigidBody::btRigidBodyConstructionInfo rb_info(
-        btScalar(0), terrain_motion_state.get(), terrain_shape.get(),
-        btVector3(0, 0, 0));
-    terrain_rb.reset(new btRigidBody(rb_info));
-
-    dynamics_world->addRigidBody(terrain_rb.get());
-    collision_shapes.push_back(terrain_shape.get());
-  }
+  dynamics_world->addRigidBody(terrain->rigid_body());
+  dynamics_world->addRigidBody(tank->rigid_body());
 }
 
 void Init() {
@@ -244,7 +226,7 @@ int main(int argc, char *argv[]) {
     tree->Draw(camera_ptr.get(), light_sources_ptr.get(), tree_model_matrices);
     tank->Draw(camera_ptr.get(), light_sources_ptr.get());
 
-    terrain_ptr->Draw(camera_ptr.get(), light_sources_ptr.get());
+    terrain->Draw(camera_ptr.get(), light_sources_ptr.get());
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();

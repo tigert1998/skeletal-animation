@@ -1,7 +1,5 @@
 #pragma once
 
-#include <btBulletDynamicsCommon.h>
-
 #include <memory>
 
 #include "camera.h"
@@ -17,7 +15,6 @@ class SimpleSquareTerrain {
   double ratio_;
   uint32_t vao_, vbo_, ebo_, indices_size_, texture_id_;
   std::unique_ptr<Shader> shader_;
-  std::unique_ptr<btTriangleMesh> bt_triangle_mesh_;
 
   glm::vec3 get_normal(double x, double y);
 
@@ -28,9 +25,6 @@ class SimpleSquareTerrain {
 
   double get_height(double x, double y);
 
-  inline btTriangleMesh *get_bt_triangle_mesh() {
-    return bt_triangle_mesh_.get();
-  }
-
-  void Draw(Camera *camera_ptr, LightSources *light_sources);
+  void Draw(Camera *camera_ptr, LightSources *light_sources,
+            glm::mat4 model_matrix);
 };

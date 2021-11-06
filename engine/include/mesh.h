@@ -23,23 +23,32 @@ class Mesh {
  public:
   Mesh(const std::string &directory_path, aiMesh *mesh, const aiScene *scene,
        Namer &bone_namer, std::vector<glm::mat4> &bone_offsets);
+
   ~Mesh();
+
   void Draw(Shader *shader_ptr, int num_instances) const;
+
   inline std::string name() { return name_; }
+
   void AppendTransform(glm::mat4 transform);
+
   inline glm::vec3 center(glm::mat4 *bone_matrix) {
     glm::mat4 transform =
         bone_matrix == nullptr || !has_bone_ ? transforms_[0] : *bone_matrix;
     return transform * glm::vec4(center_, 1);
   }
+
   inline uint32_t vao() { return vao_; }
+
+  inline glm::vec3 max() { return max_; }
+  inline glm::vec3 min() { return min_; }
 
  private:
   std::vector<glm::mat4> transforms_;
   uint32_t vao_, vbo_, ebo_, indices_size_;
   std::string name_;
   bool has_bone_ = false;
-  glm::vec3 center_;
+  glm::vec3 center_, min_, max_;
 
   struct TextureRecord {
     bool enabled;

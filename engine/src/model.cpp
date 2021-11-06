@@ -14,6 +14,7 @@
 #include <glog/logging.h>
 
 #include <assimp/Importer.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -31,6 +32,7 @@ Model::Model(const std::string &path,
              const std::vector<std::string> &filtered_node_names)
     : directory_path_(ParentPath(ParentPath(path))),
       filtered_node_names_(filtered_node_names) {
+  LOG(INFO) << "loading model at: \"" << path << "\"";
   scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale |
                                           aiProcess_CalcTangentSpace |
                                           aiProcess_Triangulate);
@@ -51,8 +53,13 @@ Model::Model(const std::string &path,
   mesh_ptrs_.resize(scene_->mNumMeshes);
   LOG(INFO) << "#meshes: " << mesh_ptrs_.size();
   LOG(INFO) << "#animations: " << scene_->mNumAnimations;
+  min_ = vec3(INFINITY);
+  max_ = -min_;
   RecursivelyInitNodes(scene_->mRootNode, mat4(1));
   bone_matrices_.resize(bone_namer_.total());
+
+  LOG(INFO) << "min: (" << min_.x << ", " << min_.y << ", " << min_.z << "), "
+            << "max: (" << max_.x << ", " << max_.y << ", " << max_.z << ")";
 }
 
 Model::Model(const std::string &path)
@@ -75,7 +82,7 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
       parent_transform * Mat4FromAimatrix4x4(node->mTransformation);
 
   if (!NodeShouldBeFiltered(node->mName.C_Str())) {
-    LOG(INFO) << "initializing node " << node->mName.C_Str();
+    LOG(INFO) << "initializing node \"" << node->mName.C_Str() << "\"";
     for (int i = 0; i < node->mNumMeshes; i++) {
       int id = node->mMeshes[i];
       if (mesh_ptrs_[id] == nullptr) {
@@ -83,6 +90,8 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
         try {
           mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
                                              bone_namer_, bone_offsets_);
+          max_ = glm::max(max_, mesh_ptrs_[id]->max());
+          min_ = glm::min(min_, mesh_ptrs_[id]->min());
         } catch (std::exception &e) {
           mesh_ptrs_[id] = nullptr;
           LOG(WARNING) << "not loading mesh \"" << mesh->mName.C_Str()
@@ -253,7 +262,7 @@ void Model::InternalDraw(bool animated, Camera *camera_ptr,
     glBindVertexArray(mesh_ptr->vao());
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, model_matrices.size() * sizeof(glm::mat4),
-                 model_matrices.data(), GL_STATIC_DRAW);
+                 model_matrices.data(), GL_DYNAMIC_DRAW);
     for (int i = 0; i < 4; i++) {
       uint32_t location = 9 + i;
       glEnableVertexAttribArray(location);

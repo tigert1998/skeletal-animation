@@ -13,7 +13,12 @@ class Tank {
 
   void Draw(Camera *camera, LightSources *light_sources);
 
+  btRigidBody *rigid_body();
+
  private:
+  static float kScaling;
+  static float kMass;
+
   std::unique_ptr<Model> model_;
 
   std::unique_ptr<btCollisionShape> shape_;

@@ -46,6 +46,7 @@ class Model {
   std::shared_ptr<Shader> shader_ptr_;
   Namer bone_namer_;
   uint32_t vbo_;
+  glm::vec3 min_, max_;
   std::vector<glm::mat4> bone_matrices_, bone_offsets_;
   std::map<std::pair<uint32_t, std::string>, uint32_t> animation_channel_map_;
   bool default_shading_ = false;

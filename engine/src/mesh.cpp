@@ -19,7 +19,8 @@
 #include "texture_manager.h"
 #include "utils.h"
 
-using namespace glm;
+using glm::vec2;
+using glm::vec3;
 
 constexpr int kMaxBonesPerVertex = 12;
 
@@ -74,10 +75,16 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
   vertices.reserve(mesh->mNumVertices);
   indices.reserve(mesh->mNumFaces * 3);
   center_ = glm::vec3(0);
+
+  min_ = vec3(INFINITY);
+  max_ = -min_;
+
   for (int i = 0; i < mesh->mNumVertices; i++) {
     auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+    min_ = glm::min(vertex.position, min_);
+    max_ = glm::max(vertex.position, max_);
     center_ += vertex.position;
     if (mesh->HasTextureCoords(0)) {
       vertex.tex_coord =
@@ -90,6 +97,11 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     vertices.push_back(vertex);
   }
   center_ /= mesh->mNumVertices;
+
+  LOG(INFO) << "\"" << name() << "\": "
+            << "center: (" << center_.x << ", " << center_.y << ", "
+            << center_.z << ")";
+
   for (int i = 0; i < mesh->mNumFaces; i++) {
     auto face = mesh->mFaces[i];
     for (int j = 0; j < face.mNumIndices; j++)
@@ -101,7 +113,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     auto bone = mesh->mBones[i];
     auto id = bone_namer.Name(bone->mName.C_Str());
 
-    bone_offsets.resize(max(id + 1, (uint32_t)bone_offsets.size()));
+    bone_offsets.resize(std::max(id + 1, (uint32_t)bone_offsets.size()));
     bone_offsets[id] = Mat4FromAimatrix4x4(bone->mOffsetMatrix);
 
     for (int j = 0; j < bone->mNumWeights; j++) {
