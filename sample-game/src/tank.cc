@@ -6,17 +6,17 @@
 float Tank::kScaling = 0.5;
 float Tank::kMass = 54 * 1e3;
 
-Tank::Tank(const std::string &model_path) {
+Tank::Tank(const std::string &model_path, glm::vec3 position) {
   model_.reset(new Model(model_path));
 
   glm::vec3 size = model_->max() - model_->min();
-  size *= kScaling * 0.5;
+  size *= kScaling;
 
-  shape_.reset(new btBoxShape(btVector3(size.x, size.y, size.z)));
+  shape_.reset(new btBoxShape(btVector3(size.x, size.y, size.z) / 2));
 
   btTransform transform;
   transform.setIdentity();
-  transform.setOrigin(btVector3(10, 5, 10));
+  transform.setOrigin(btVector3(position.x, position.y, position.z));
 
   btVector3 local_inertia;
   shape_->calculateLocalInertia(kMass, local_inertia);

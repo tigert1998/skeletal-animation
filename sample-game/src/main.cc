@@ -120,7 +120,8 @@ void InitWorld() {
       "/Users/tigertang/Projects/models/tree/source/tree.fbx",
       std::vector<std::string>({"Sphere"}));
   tank = make_unique<Tank>(
-      "/Users/tigertang/Projects/models/tiger-i/source/tiger1.obj");
+      "/Users/tigertang/Projects/models/tiger-i/source/tiger1.obj",
+      glm::vec3(10, 10, 10));
   terrain = make_unique<Terrain>("/Users/tigertang/Projects/models/grass.png");
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);

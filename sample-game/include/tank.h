@@ -2,6 +2,7 @@
 
 #include <btBulletDynamicsCommon.h>
 
+#include <glm/glm.hpp>
 #include <memory>
 
 #include "camera.h"
@@ -9,7 +10,7 @@
 
 class Tank {
  public:
-  Tank(const std::string &model_path);
+  Tank(const std::string &model_path, glm::vec3 position);
 
   void Draw(Camera *camera, LightSources *light_sources);
 
