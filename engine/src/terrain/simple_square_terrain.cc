@@ -90,6 +90,11 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
       vertices.push_back(vertex);
     }
 
+  auto bt_vector3_from_glm_vec3 = [](glm::vec3 v) {
+    return btVector3(v.x, v.y, v.z);
+  };
+
+  bt_triangle_mesh_.reset(new btTriangleMesh());
   std::vector<int> indices;
   indices.reserve(size * size * 6);
   for (int i = 0; i < size; i++)
@@ -104,6 +109,14 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
       indices.push_back(b);
       indices.push_back(c);
       indices.push_back(d);
+      bt_triangle_mesh_->addTriangle(
+          bt_vector3_from_glm_vec3(vertices[a].position),
+          bt_vector3_from_glm_vec3(vertices[b].position),
+          bt_vector3_from_glm_vec3(vertices[c].position));
+      bt_triangle_mesh_->addTriangle(
+          bt_vector3_from_glm_vec3(vertices[b].position),
+          bt_vector3_from_glm_vec3(vertices[c].position),
+          bt_vector3_from_glm_vec3(vertices[d].position));
     }
 
   indices_size_ = indices.size();

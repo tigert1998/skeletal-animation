@@ -55,6 +55,9 @@ Model::Model(const std::string &path,
   bone_matrices_.resize(bone_namer_.total());
 }
 
+Model::Model(const std::string &path)
+    : Model(path, std::vector<std::string>({})) {}
+
 Model::~Model() {
   aiReleaseImport(scene_);
   glDeleteBuffers(1, &vbo_);
@@ -222,7 +225,7 @@ void Model::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
-                 std::vector<glm::mat4> model_matrices) {
+                 const std::vector<glm::mat4> &model_matrices) {
   InternalDraw(false, camera_ptr, light_sources, model_matrices, false);
 }
 
@@ -234,7 +237,7 @@ void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
 
 void Model::InternalDraw(bool animated, Camera *camera_ptr,
                          LightSources *light_sources,
-                         std::vector<glm::mat4> model_matrices,
+                         const std::vector<glm::mat4> &model_matrices,
                          bool sort_meshes) {
   shader_ptr_->Use();
   if (light_sources != nullptr) {

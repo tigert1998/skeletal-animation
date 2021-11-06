@@ -26,11 +26,12 @@ class Model {
   Model() = delete;
   Model(const std::string &path,
         const std::vector<std::string> &filtered_node_names);
+  Model(const std::string &path);
   ~Model();
   void Draw(Camera *camera_ptr, LightSources *light_sources,
             glm::mat4 model_matrix);
   void Draw(Camera *camera_ptr, LightSources *light_sources,
-            std::vector<glm::mat4> model_matrices);
+            const std::vector<glm::mat4> &model_matrices);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
             LightSources *light_sources, glm::mat4 model_matrix);
   int NumAnimations() const;
@@ -63,7 +64,8 @@ class Model {
   bool NodeShouldBeFiltered(const std::string &name);
   void InternalDraw(bool animated, Camera *camera_ptr,
                     LightSources *light_sources,
-                    std::vector<glm::mat4> model_matrices, bool sort_meshes);
+                    const std::vector<glm::mat4> &model_matrices,
+                    bool sort_meshes);
 
   static const std::string kVsSource;
   static const std::string kFsSource;
