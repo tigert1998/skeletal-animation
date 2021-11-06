@@ -17,8 +17,8 @@
 #include "keyboard.h"
 #include "model.h"
 #include "skybox.h"
+#include "tank.h"
 #include "terrain/simple_square_terrain.h"
-#include "wall.h"
 
 uint32_t width = 1000, height = 600;
 
@@ -26,14 +26,14 @@ using namespace glm;
 using namespace std;
 
 std::unique_ptr<Model> tree;
-std::unique_ptr<Model> tiger;
 std::unique_ptr<Camera> camera_ptr;
 std::unique_ptr<LightSources> light_sources_ptr;
 std::unique_ptr<Skybox> skybox_ptr;
 std::unique_ptr<SimpleSquareTerrain> terrain_ptr;
 
 std::vector<glm::mat4> tree_model_matrices;
-glm::mat4 tank_model_matrix;
+
+std::unique_ptr<Tank> tank;
 
 std::unique_ptr<btDefaultCollisionConfiguration> collision_config;
 std::unique_ptr<btCollisionDispatcher> dispatcher;
@@ -115,7 +115,6 @@ void ImGuiWindow() {
   camera_ptr->set_alpha(alpha);
   camera_ptr->set_beta(beta);
   tree->set_default_shading(default_shading_choice == 1);
-  tiger->set_default_shading(default_shading_choice == 1);
 }
 
 void InitWorld() {
@@ -125,7 +124,7 @@ void InitWorld() {
   tree = make_unique<Model>(
       "/Users/tigertang/Projects/models/tree/source/tree.fbx",
       std::vector<std::string>({"Sphere"}));
-  tiger = make_unique<Model>(
+  tank = make_unique<Tank>(
       "/Users/tigertang/Projects/models/tiger-i/source/tiger1.obj");
   terrain_ptr = make_unique<SimpleSquareTerrain>(
       256, 100, "/Users/tigertang/Projects/models/grass.png");
@@ -142,9 +141,6 @@ void InitWorld() {
     tree_model_matrices.push_back(
         glm::translate(mat4(1), vec3(x, terrain_ptr->get_height(x, z), z)));
   }
-
-  tank_model_matrix =
-      glm::scale(glm::translate(mat4(1), vec3(50, 0, 50)), vec3(0.5));
 
   collision_config.reset(new btDefaultCollisionConfiguration());
   dispatcher.reset(new btCollisionDispatcher(collision_config.get()));
@@ -246,7 +242,7 @@ int main(int argc, char *argv[]) {
     skybox_ptr->Draw(camera_ptr.get());
 
     tree->Draw(camera_ptr.get(), light_sources_ptr.get(), tree_model_matrices);
-    tiger->Draw(camera_ptr.get(), light_sources_ptr.get(), tank_model_matrix);
+    tank->Draw(camera_ptr.get(), light_sources_ptr.get());
 
     terrain_ptr->Draw(camera_ptr.get(), light_sources_ptr.get());
 
