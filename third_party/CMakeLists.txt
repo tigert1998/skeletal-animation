@@ -1,6 +1,7 @@
 project(third-party)
 
 option(USE_SYSTEM_ASSIMP "Use system assimp" OFF)
+option(USE_SYSTEM_BULLET "Use system bullet" OFF)
 
 # glfw
 add_subdirectory("glfw")
@@ -49,7 +50,26 @@ target_include_directories(imgui PUBLIC "${imgui_dir}")
 add_subdirectory(glog)
 
 # bullet3
-find_package(Bullet)
-add_library(bullet INTERFACE)
-target_include_directories(bullet INTERFACE "${BULLET_INCLUDE_DIR}")
-target_link_libraries(bullet INTERFACE "${BULLET_LIBRARIES}")
+if(USE_SYSTEM_BULLET)
+    find_package(Bullet REQUIRED)
+    add_library(bullet INTERFACE)
+    target_include_directories(bullet INTERFACE "${BULLET_INCLUDE_DIR}")
+    target_link_libraries(bullet INTERFACE "${BULLET_LIBRARIES}")
+else()
+    add_subdirectory(bullet3)
+    add_library(bullet INTERFACE)
+    target_include_directories(bullet INTERFACE "bullet3/src")
+    target_link_libraries(bullet INTERFACE
+        Bullet3Collision
+        Bullet3Common
+        Bullet3Dynamics
+        Bullet3Geometry
+        Bullet3OpenCL_clew
+        Bullet2FileLoader
+        BulletCollision
+        BulletDynamics
+        BulletInverseDynamics
+        BulletSoftBody
+        LinearMath
+    )
+endif()
