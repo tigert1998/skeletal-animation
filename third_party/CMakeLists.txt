@@ -49,7 +49,7 @@ target_include_directories(imgui PUBLIC "${imgui_dir}")
 add_subdirectory(glog)
 
 # bullet3
-find_package(Bullet REQUIRED)
+find_package(Bullet)
 add_library(bullet INTERFACE)
 target_include_directories(bullet INTERFACE "${BULLET_INCLUDE_DIR}")
 target_link_libraries(bullet INTERFACE "${BULLET_LIBRARIES}")

@@ -6,6 +6,8 @@
 //  Copyright © 2018 tigertang. All rights reserved.
 //
 
+#define NOMINMAX
+
 #include "model.h"
 
 #include <assimp/cimport.h>
@@ -90,8 +92,8 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
         try {
           mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
                                              bone_namer_, bone_offsets_);
-          max_ = glm::max(max_, mesh_ptrs_[id]->max());
-          min_ = glm::min(min_, mesh_ptrs_[id]->min());
+          max_ = (glm::max)(max_, mesh_ptrs_[id]->max());
+          min_ = (glm::min)(min_, mesh_ptrs_[id]->min());
         } catch (std::exception &e) {
           mesh_ptrs_[id] = nullptr;
           LOG(WARNING) << "not loading mesh \"" << mesh->mName.C_Str()

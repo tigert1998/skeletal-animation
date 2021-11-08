@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
+#include <limits>
 #include <vector>
 
 #include "texture_manager.h"
@@ -83,8 +84,8 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     auto vertex = VertexWithBones();
     vertex.position =
         vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-    min_ = glm::min(vertex.position, min_);
-    max_ = glm::max(vertex.position, max_);
+    min_ = (glm::min)(vertex.position, min_);
+    max_ = (glm::max)(vertex.position, max_);
     center_ += vertex.position;
     if (mesh->HasTextureCoords(0)) {
       vertex.tex_coord =
@@ -113,7 +114,7 @@ Mesh::Mesh(const std::string &directory_path, aiMesh *mesh,
     auto bone = mesh->mBones[i];
     auto id = bone_namer.Name(bone->mName.C_Str());
 
-    bone_offsets.resize(std::max(id + 1, (uint32_t)bone_offsets.size()));
+    bone_offsets.resize((std::max)(id + 1, (uint32_t)bone_offsets.size()));
     bone_offsets[id] = Mat4FromAimatrix4x4(bone->mOffsetMatrix);
 
     for (int j = 0; j < bone->mNumWeights; j++) {
