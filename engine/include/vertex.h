@@ -15,27 +15,21 @@
 #include "cg_exception.h"
 
 template <int MaxBonesPerVertex>
-class Vertex {
+class VertexWithBonesBase {
  public:
-  glm::vec3 position;
-  glm::vec2 tex_coord;
-  glm::vec3 normal;
-  int bone_ids[MaxBonesPerVertex];
-  float bone_weights[MaxBonesPerVertex];
-
-  Vertex();
+  VertexWithBonesBase();
   void AddBone(int id, float weight);
   int NumBones();
 };
 
 template <int MaxBonesPerVertex>
-Vertex<MaxBonesPerVertex>::Vertex() {
+VertexWithBonesBase<MaxBonesPerVertex>::VertexWithBonesBase() {
   std::fill(bone_ids, bone_ids + MaxBonesPerVertex, -1);
   std::fill(bone_weights, bone_weights + MaxBonesPerVertex, 0);
 }
 
 template <int MaxBonesPerVertex>
-void Vertex<MaxBonesPerVertex>::AddBone(int id, float weight) {
+void VertexWithBonesBase<MaxBonesPerVertex>::AddBone(int id, float weight) {
   int i = NumBones();
   if (i >= MaxBonesPerVertex) throw MaxBoneExceededError();
   bone_weights[i] = weight;
@@ -43,16 +37,39 @@ void Vertex<MaxBonesPerVertex>::AddBone(int id, float weight) {
 }
 
 template <int MaxBonesPerVertex>
-int Vertex<MaxBonesPerVertex>::NumBones() {
+int VertexWithBonesBase<MaxBonesPerVertex>::NumBones() {
   for (int i = 0; i < MaxBonesPerVertex; i++)
     if (bone_ids[i] < 0) return i;
   return MaxBonesPerVertex;
 }
 
-template <>
-class Vertex<0> {
+template <int MaxBonesPerVertex, bool HasTexCoord = true>
+class Vertex : public VertexWithBonesBase<MaxBonesPerVertex> {
  public:
   glm::vec3 position;
   glm::vec2 tex_coord;
+  glm::vec3 normal;
+};
+
+template <int MaxBonesPerVertex>
+class Vertex<MaxBonesPerVertex, false>
+    : public VertexWithBonesBase<MaxBonesPerVertex> {
+ public:
+  glm::vec3 position;
+  glm::vec3 normal;
+};
+
+template <>
+class Vertex<0, true> {
+ public:
+  glm::vec3 position;
+  glm::vec2 tex_coord;
+  glm::vec3 normal;
+};
+
+template <>
+class Vertex<0, false> {
+ public:
+  glm::vec3 position;
   glm::vec3 normal;
 };
