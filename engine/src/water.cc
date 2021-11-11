@@ -56,7 +56,6 @@ void Water::Draw(Camera *camera) {
   using WaterVertex = Vertex<0, false>;
   std::vector<WaterVertex> vertices;
 
-  std::vector<WaterVertex> vertices;
   for (int i = 0; i < height_; i++)
     for (int j = 0; j < width_; j++) {
       float x = length_ * i / height_;

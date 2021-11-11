@@ -116,16 +116,14 @@ void InitWorld() {
   light_sources_ptr = make_unique<LightSources>();
   light_sources_ptr->Add(make_unique<Point>(vec3(5, 100, 5), vec3(1, 1, 1)));
 
-  tree = make_unique<Model>(
-      "/Users/tigertang/Projects/models/tree/source/tree.fbx",
-      std::vector<std::string>({"Sphere"}));
-  tank = make_unique<Tank>(
-      "/Users/tigertang/Projects/models/tiger-i/source/tiger1.obj",
-      glm::vec3(10, 10, 10));
-  terrain = make_unique<Terrain>("/Users/tigertang/Projects/models/grass.png");
+  tree = make_unique<Model>("resources/tree/source/tree.fbx",
+                            std::vector<std::string>({"Sphere"}));
+  tank = make_unique<Tank>("resources/tiger-i/source/tiger1.obj",
+                           glm::vec3(10, 5, 10));
+  terrain = make_unique<Terrain>("resources/greenland.png");
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
-  skybox_ptr = make_unique<Skybox>("models/skyboxes/cloud", "png");
+  skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
 
   std::default_random_engine rd(10086);
 
