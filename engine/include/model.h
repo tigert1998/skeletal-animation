@@ -73,4 +73,5 @@ class Model {
 
   static const std::string kVsSource;
   static const std::string kFsSource;
+  static std::shared_ptr<Shader> kShader;
 };

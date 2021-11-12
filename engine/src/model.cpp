@@ -30,6 +30,8 @@ using std::vector;
 using namespace Assimp;
 using namespace glm;
 
+std::unique_ptr<Shader> Model::kShader = nullptr;
+
 Model::Model(const std::string &path,
              const std::vector<std::string> &filtered_node_names)
     : directory_path_(ParentPath(ParentPath(path))),
@@ -38,8 +40,10 @@ Model::Model(const std::string &path,
   scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale |
                                           aiProcess_CalcTangentSpace |
                                           aiProcess_Triangulate);
-  shader_ptr_ = shared_ptr<Shader>(
-      new Shader(Shader::SRC, Model::kVsSource, Model::kFsSource));
+  if (kShader == nullptr) {
+    kShader.reset(new Shader(Shader::SRC, Model::kVsSource, Model::kFsSource));
+  }
+  shader_ptr_ = kShader;
   glGenBuffers(1, &vbo_);
 
   animation_channel_map_.clear();
