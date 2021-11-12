@@ -26,7 +26,7 @@ void main() {
 )";
 
 DebugDrawer::DebugDrawer() {
-  shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
+  shader_.reset(new Shader(kVsSource, kFsSource));
 
   glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);

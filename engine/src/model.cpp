@@ -30,7 +30,7 @@ using std::vector;
 using namespace Assimp;
 using namespace glm;
 
-std::unique_ptr<Shader> Model::kShader = nullptr;
+std::shared_ptr<Shader> Model::kShader = nullptr;
 
 Model::Model(const std::string &path,
              const std::vector<std::string> &filtered_node_names)
@@ -41,7 +41,7 @@ Model::Model(const std::string &path,
                                           aiProcess_CalcTangentSpace |
                                           aiProcess_Triangulate);
   if (kShader == nullptr) {
-    kShader.reset(new Shader(Shader::SRC, Model::kVsSource, Model::kFsSource));
+    kShader.reset(new Shader(Model::kVsSource, Model::kFsSource));
   }
   shader_ptr_ = kShader;
   glGenBuffers(1, &vbo_);

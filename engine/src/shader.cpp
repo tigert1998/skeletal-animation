@@ -18,24 +18,16 @@
 
 #include "cg_exception.h"
 
-Shader::Shader(uint32_t type, const std::string &vs, const std::string &fs) {
-  if (type == Shader::PATH) {
-    auto ReadFileAt = [](const std::string &path) -> std::string {
-      std::ifstream ifs(path.c_str());
-      std::string res((std::istreambuf_iterator<char>(ifs)),
-                      std::istreambuf_iterator<char>());
-      return res;
-    };
-    std::string vs_source = ReadFileAt(vs);
-    std::string fs_source = ReadFileAt(fs);
-    auto vs_id = Compile(GL_VERTEX_SHADER, vs_source, vs);
-    auto fs_id = Compile(GL_FRAGMENT_SHADER, fs_source, fs);
-    id = Link(vs_id, fs_id);
-  } else {
-    auto vs_id = Compile(GL_VERTEX_SHADER, vs, "");
-    auto fs_id = Compile(GL_FRAGMENT_SHADER, fs, "");
-    id = Link(vs_id, fs_id);
+Shader::Shader(const std::string &vs, const std::string &fs)
+    : Shader(std::vector<std::pair<uint32_t, std::string>>{
+          {GL_VERTEX_SHADER, vs}, {GL_FRAGMENT_SHADER, fs}}) {}
+
+Shader::Shader(const std::vector<std::pair<uint32_t, std::string>> &pairs) {
+  std::vector<uint32_t> ids;
+  for (int i = 0; i < pairs.size(); i++) {
+    ids.push_back(Compile(pairs[i].first, pairs[i].second, ""));
   }
+  id_ = Link(ids);
 }
 
 uint32_t Shader::Compile(uint32_t type, const std::string &source,
@@ -56,16 +48,12 @@ uint32_t Shader::Compile(uint32_t type, const std::string &source,
   throw ShaderCompileError(path.c_str(), log_str);
 }
 
-uint32_t Shader::Link(uint32_t vs_id, uint32_t fs_id) {
+uint32_t Shader::Link(const std::vector<uint32_t> &ids) {
   uint32_t program_id = glCreateProgram();
 
-  glAttachShader(program_id, vs_id);
-  glAttachShader(program_id, fs_id);
-
+  for (auto id : ids) glAttachShader(program_id, id);
   glLinkProgram(program_id);
-
-  glDeleteShader(vs_id);
-  glDeleteShader(fs_id);
+  for (auto id : ids) glDeleteShader(id);
 
   int success;
   glGetProgramiv(program_id, GL_LINK_STATUS, &success);
@@ -79,12 +67,12 @@ uint32_t Shader::Link(uint32_t vs_id, uint32_t fs_id) {
   throw ShaderLinkError(log_str);
 }
 
-void Shader::Use() const { glUseProgram(id); }
+void Shader::Use() const { glUseProgram(id_); }
 
 template <>
 void Shader::SetUniform<glm::vec3>(const std::string &identifier,
                                    const glm::vec3 &value) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   glUniform3fv(location, 1, glm::value_ptr(value));
 }
@@ -92,7 +80,7 @@ void Shader::SetUniform<glm::vec3>(const std::string &identifier,
 template <>
 void Shader::SetUniform<glm::mat4>(const std::string &identifier,
                                    const glm::mat4 &value) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
@@ -100,24 +88,24 @@ void Shader::SetUniform<glm::mat4>(const std::string &identifier,
 template <>
 void Shader::SetUniform<int32_t>(const std::string &identifier,
                                  const int32_t &value) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   glUniform1i(location, value);
 }
 
 template <>
 int32_t Shader::GetUniform(const std::string &identifier) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   int32_t value;
-  glGetUniformiv(id, location, &value);
+  glGetUniformiv(id_, location, &value);
   return value;
 }
 
 template <>
 void Shader::SetUniform<float>(const std::string &identifier,
                                const float &value) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   glUniform1f(location, value);
 }
@@ -125,7 +113,7 @@ void Shader::SetUniform<float>(const std::string &identifier,
 template <>
 void Shader::SetUniform<std::vector<glm::mat4>>(
     const std::string &identifier, const std::vector<glm::mat4> &value) const {
-  auto location = glGetUniformLocation(id, identifier.c_str());
+  auto location = glGetUniformLocation(id_, identifier.c_str());
   if (location < 0) throw ShaderSettingError(identifier);
   if (value.size() == 0) return;
   glUniformMatrix4fv(location, value.size(), GL_FALSE,

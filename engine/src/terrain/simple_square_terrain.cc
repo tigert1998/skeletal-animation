@@ -72,7 +72,7 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
     : size_(size), length_(length), ratio_(0.25) {
   // size * size squares
   perlin_noise_.reset(new PerlinNoise(1024, 10086));
-  shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
+  shader_.reset(new Shader(kVsSource, kFsSource));
   texture_id_ = TextureManager::LoadTexture(texture_path, GL_REPEAT);
 
   std::vector<Vertex<0>> vertices;
