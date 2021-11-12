@@ -15,13 +15,12 @@ class Water {
   static std::string kVsSource, kFsSource;
 
   std::vector<float> u_, v_, buf_;
-  int height_, width_;
+  int height_, width_, indices_size_;
   float length_;
   uint32_t vao_, vbo_, ebo_;
   std::unique_ptr<Shader> shader_;
 
   std::vector<VertexType> vertices_;
-  std::vector<uint32_t> indices_;
 
   int Index(int x, int y);
   float GetU(int x, int y);

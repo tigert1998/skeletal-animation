@@ -13,7 +13,6 @@ Water::Water(int height, int width, float length)
       v_((height + 1) * (width + 1)),
       buf_((height + 1) * (width + 1)),
       length_(length),
-      indices_(height * width * 6),
       vertices_((height + 1) * (width + 1)) {
   shader_.reset(new Shader(kVsSource, kFsSource));
 
@@ -21,20 +20,22 @@ Water::Water(int height, int width, float length)
   glGenBuffers(1, &vbo_);
   glGenBuffers(1, &ebo_);
 
-  int idx = 0;
+  std::vector<uint32_t> indices;
   for (int i = 0; i < height_; i++)
     for (int j = 0; j < width_; j++) {
       int a = Index(i, j);
       int b = Index(i, j + 1);
       int c = Index(i + 1, j);
       int d = Index(i + 1, j + 1);
-      indices_[idx++] = a;
-      indices_[idx++] = b;
-      indices_[idx++] = c;
-      indices_[idx++] = b;
-      indices_[idx++] = c;
-      indices_[idx++] = d;
+      indices.push_back(a);
+      indices.push_back(b);
+      indices.push_back(c);
+      indices.push_back(b);
+      indices.push_back(c);
+      indices.push_back(d);
     }
+
+  indices_size_ = indices.size();
 
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
@@ -45,8 +46,8 @@ Water::Water(int height, int width, float length)
 
   glBindVertexArray(vao_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices_.size(),
-               indices_.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices_size_,
+               indices.data(), GL_STATIC_DRAW);
   glBindVertexArray(0);
 }
 
@@ -68,7 +69,7 @@ float Water::GetU(int x, int y) {
 }
 
 void Water::StepSimulation(double delta_time) {
-  const float c = 16;
+  const float c = 4;
 
   for (int i = 0; i <= height_; i++) {
     for (int j = 0; j <= width_; j++) {
@@ -118,7 +119,7 @@ void Water::Draw(Camera *camera, LightSources *light_sources) {
                                  camera->projection_matrix());
   light_sources->Set(shader_.get());
 
-  glDrawElements(GL_TRIANGLES, vertices_.size(), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
 
   glBindVertexArray(0);
 }
