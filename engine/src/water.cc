@@ -36,18 +36,17 @@ Water::Water(int height, int width, float length)
       indices_[idx++] = d;
     }
 
+  for (int i = 0; i <= height_; i++)
+    for (int j = 0; j <= width_; j++) {
+      int idx = Index(i, j);
+      u_[idx] = 0;
+      v_[idx] = 0;
+    }
+
   glBindVertexArray(vao_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices_.size(),
                indices_.data(), GL_STATIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(VertexType),
-                        (void *)offsetof(VertexType, position));
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(VertexType),
-                        (void *)offsetof(VertexType, normal));
-
   glBindVertexArray(0);
 }
 
@@ -105,12 +104,20 @@ void Water::Draw(Camera *camera, LightSources *light_sources) {
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
   glBufferData(GL_ARRAY_BUFFER, sizeof(VertexType) * vertices_.size(),
                vertices_.data(), GL_DYNAMIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(VertexType),
+                        (void *)offsetof(VertexType, position));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(VertexType),
+                        (void *)offsetof(VertexType, normal));
 
   shader_->Use();
   shader_->SetUniform<glm::mat4>("uModelMatrix", glm::mat4(1));
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera->projection_matrix());
+  light_sources->Set(shader_.get());
+
   glDrawElements(GL_TRIANGLES, vertices_.size(), GL_UNSIGNED_INT, nullptr);
 
   glBindVertexArray(0);
@@ -119,21 +126,18 @@ void Water::Draw(Camera *camera, LightSources *light_sources) {
 std::string Water::kVsSource = R"(
 #version 410 core
 layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec2 aTexCoord;
-layout (location = 2) in vec3 aNormal;
+layout (location = 1) in vec3 aNormal;
 
 uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 
 out vec3 vPosition;
-out vec2 vTexCoord;
 out vec3 vNormal;
 
 void main() {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * vec4(aPosition, 1));
-    vTexCoord = aTexCoord;
     vNormal = aNormal;
 }
 )";
@@ -142,7 +146,6 @@ std::string Water::kFsSource = R"(
 #version 410 core
 
 in vec3 vPosition;
-in vec2 vTexCoord;
 in vec3 vNormal;
 )" + LightSources::kFsSource + R"(
 out vec4 fragColor;
@@ -162,7 +165,7 @@ vec3 calcDiffuse(vec3 raw) {
 }
 
 vec3 defaultShading() {
-    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
+    vec3 color = vec3(0.4549f, 0.6470f, 0.7686f);
     return color * 0.2 + calcDiffuse(color);
 }
 
