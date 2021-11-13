@@ -5,12 +5,15 @@
 #include <glm/glm.hpp>
 
 #include "texture_manager.h"
+#include "utils.h"
 #include "vertex.h"
 
 Water::Water(int height, int width, float height_length, int tex_height,
              int tex_width)
     : height_(height),
       width_(width),
+      tex_height_(tex_height * FB_HW_RATIO),
+      tex_width_(tex_width * FB_HW_RATIO),
       u_((height + 1) * (width + 1)),
       v_((height + 1) * (width + 1)),
       buf_((height + 1) * (width + 1)),
@@ -27,12 +30,12 @@ Water::Water(int height, int width, float height_length, int tex_height,
 
   glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
   reflection_tex_id_ =
-      TextureManager::AllocateTexture(tex_height, tex_width, GL_RGB);
+      TextureManager::AllocateTexture(tex_height_, tex_width_, GL_RGB);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          reflection_tex_id_, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
   refraction_tex_id_ =
-      TextureManager::AllocateTexture(tex_height, tex_width, GL_RGB);
+      TextureManager::AllocateTexture(tex_height_, tex_width_, GL_RGB);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          refraction_tex_id_, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -147,6 +150,10 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
   glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
 
   glBindVertexArray(0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
+  render(camera);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 std::string Water::kVsSource = R"(

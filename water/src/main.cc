@@ -20,6 +20,7 @@
 #include <iostream>
 #include <memory>
 
+#include "debug_quad.h"
 #include "keyboard.h"
 #include "model.h"
 #include "skybox.h"
@@ -36,9 +37,7 @@ std::unique_ptr<LightSources> light_sources_ptr;
 std::unique_ptr<Skybox> skybox_ptr;
 std::unique_ptr<Water> water;
 std::unique_ptr<Model> wall;
-
-double animation_time = 0;
-int animation_id = -1;
+std::unique_ptr<DebugQuad> debug_quad;
 
 GLFWwindow *window;
 
@@ -119,6 +118,7 @@ void Init() {
 
   wall.reset(new Model("resources/floor/source/floor.obj"));
   water.reset(new Water(100, 100, kLength, height, width));
+  debug_quad.reset(new DebugQuad());
 
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
@@ -178,7 +178,6 @@ int main(int argc, char *argv[]) {
     double current_time = glfwGetTime();
     double delta_time = current_time - last_time;
     last_time = current_time;
-    animation_time += delta_time;
 
     glfwPollEvents();
     Keyboard::shared.Elapse(delta_time);
@@ -190,6 +189,8 @@ int main(int argc, char *argv[]) {
     water->StepSimulation(delta_time);
     water->Draw(camera_ptr.get(), light_sources_ptr.get(), Render,
                 glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
+
+    debug_quad->Draw(water->reflection_tex_id(), vec4(-1, 0, 0, 1));
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
