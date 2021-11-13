@@ -114,10 +114,11 @@ void Init() {
       make_unique<Point>(vec3(100, 100, 100), vec3(1, 1, 1)));
 
   camera_ptr =
-      make_unique<Camera>(vec3(10, 2, 10), static_cast<double>(width) / height);
-  camera_ptr->set_front(normalize(vec3(-1, -0.2, -1)));
-  water.reset(new Water(100, 100, kLength));
+      make_unique<Camera>(vec3(10, 7, 10), static_cast<double>(width) / height);
+  camera_ptr->set_front(normalize(vec3(-1, -0.4, -1)));
+
   wall.reset(new Model("resources/floor/source/floor.obj"));
+  water.reset(new Water(100, 100, kLength));
 
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
@@ -173,9 +174,6 @@ int main(int argc, char *argv[]) {
 
     skybox_ptr->Draw(camera_ptr.get());
 
-    water->StepSimulation(delta_time);
-    water->Draw(camera_ptr.get(), light_sources_ptr.get(),
-                glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
     {
       mat4 first = glm::scale(mat4(1), vec3(kLength));
       mat4 move_up = glm::translate(mat4(1), vec3(0, 1, 0));
@@ -186,6 +184,10 @@ int main(int argc, char *argv[]) {
       wall->Draw(camera_ptr.get(), light_sources_ptr.get(),
                  {first, second, third});
     }
+    water->StepSimulation(delta_time);
+    water->Draw(camera_ptr.get(), light_sources_ptr.get(),
+                glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
+
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();

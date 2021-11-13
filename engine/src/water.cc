@@ -175,6 +175,6 @@ vec3 defaultShading() {
 }
 
 void main() {
-    fragColor = vec4(defaultShading(), 1);
+    fragColor = vec4(defaultShading(), 0.7);
 }
 )";
