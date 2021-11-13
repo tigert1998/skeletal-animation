@@ -26,14 +26,20 @@ class Model {
   Model() = delete;
   Model(const std::string &path,
         const std::vector<std::string> &filtered_node_names);
+  Model(const std::string &path);
   ~Model();
   void Draw(Camera *camera_ptr, LightSources *light_sources,
             glm::mat4 model_matrix);
+  void Draw(Camera *camera_ptr, LightSources *light_sources,
+            const std::vector<glm::mat4> &model_matrices);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
             LightSources *light_sources, glm::mat4 model_matrix);
   int NumAnimations() const;
   void set_default_shading(bool default_shading);
   inline bool default_shading() { return default_shading_; }
+
+  inline glm::vec3 min() { return min_; }
+  inline glm::vec3 max() { return max_; }
 
  private:
   std::vector<std::string> filtered_node_names_;
@@ -42,6 +48,8 @@ class Model {
   const aiScene *scene_;
   std::shared_ptr<Shader> shader_ptr_;
   Namer bone_namer_;
+  uint32_t vbo_;
+  glm::vec3 min_, max_;
   std::vector<glm::mat4> bone_matrices_, bone_offsets_;
   std::map<std::pair<uint32_t, std::string>, uint32_t> animation_channel_map_;
   bool default_shading_ = false;
@@ -59,8 +67,11 @@ class Model {
 
   bool NodeShouldBeFiltered(const std::string &name);
   void InternalDraw(bool animated, Camera *camera_ptr,
-                    LightSources *light_sources, glm::mat4 model_matrix);
+                    LightSources *light_sources,
+                    const std::vector<glm::mat4> &model_matrices,
+                    bool sort_meshes);
 
   static const std::string kVsSource;
   static const std::string kFsSource;
+  static std::shared_ptr<Shader> kShader;
 };

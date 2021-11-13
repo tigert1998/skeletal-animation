@@ -6,6 +6,8 @@
 //  Copyright © 2018 tigertang. All rights reserved.
 //
 
+#define NOMINMAX
+
 #include "model.h"
 
 #include <assimp/cimport.h>
@@ -14,6 +16,7 @@
 #include <glog/logging.h>
 
 #include <assimp/Importer.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -27,15 +30,21 @@ using std::vector;
 using namespace Assimp;
 using namespace glm;
 
+std::shared_ptr<Shader> Model::kShader = nullptr;
+
 Model::Model(const std::string &path,
              const std::vector<std::string> &filtered_node_names)
     : directory_path_(ParentPath(ParentPath(path))),
       filtered_node_names_(filtered_node_names) {
+  LOG(INFO) << "loading model at: \"" << path << "\"";
   scene_ = aiImportFile(path.c_str(), aiProcess_GlobalScale |
                                           aiProcess_CalcTangentSpace |
                                           aiProcess_Triangulate);
-  shader_ptr_ = shared_ptr<Shader>(
-      new Shader(Shader::SRC, Model::kVsSource, Model::kFsSource));
+  if (kShader == nullptr) {
+    kShader.reset(new Shader(Model::kVsSource, Model::kFsSource));
+  }
+  shader_ptr_ = kShader;
+  glGenBuffers(1, &vbo_);
 
   animation_channel_map_.clear();
   for (int i = 0; i < scene_->mNumAnimations; i++) {
@@ -50,11 +59,22 @@ Model::Model(const std::string &path,
   mesh_ptrs_.resize(scene_->mNumMeshes);
   LOG(INFO) << "#meshes: " << mesh_ptrs_.size();
   LOG(INFO) << "#animations: " << scene_->mNumAnimations;
+  min_ = vec3(INFINITY);
+  max_ = -min_;
   RecursivelyInitNodes(scene_->mRootNode, mat4(1));
   bone_matrices_.resize(bone_namer_.total());
+
+  LOG(INFO) << "min: (" << min_.x << ", " << min_.y << ", " << min_.z << "), "
+            << "max: (" << max_.x << ", " << max_.y << ", " << max_.z << ")";
 }
 
-Model::~Model() { aiReleaseImport(scene_); }
+Model::Model(const std::string &path)
+    : Model(path, std::vector<std::string>({})) {}
+
+Model::~Model() {
+  aiReleaseImport(scene_);
+  glDeleteBuffers(1, &vbo_);
+}
 
 bool Model::NodeShouldBeFiltered(const std::string &name) {
   for (int i = 0; i < filtered_node_names_.size(); i++) {
@@ -68,6 +88,7 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
       parent_transform * Mat4FromAimatrix4x4(node->mTransformation);
 
   if (!NodeShouldBeFiltered(node->mName.C_Str())) {
+    LOG(INFO) << "initializing node \"" << node->mName.C_Str() << "\"";
     for (int i = 0; i < node->mNumMeshes; i++) {
       int id = node->mMeshes[i];
       if (mesh_ptrs_[id] == nullptr) {
@@ -75,6 +96,8 @@ void Model::RecursivelyInitNodes(aiNode *node, glm::mat4 parent_transform) {
         try {
           mesh_ptrs_[id] = make_shared<Mesh>(directory_path_, mesh, scene_,
                                              bone_namer_, bone_offsets_);
+          max_ = (glm::max)(max_, mesh_ptrs_[id]->max());
+          min_ = (glm::min)(min_, mesh_ptrs_[id]->min());
         } catch (std::exception &e) {
           mesh_ptrs_[id] = nullptr;
           LOG(WARNING) << "not loading mesh \"" << mesh->mName.C_Str()
@@ -212,44 +235,77 @@ void Model::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
   RecursivelyUpdateBoneMatrices(
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
-  InternalDraw(true, camera_ptr, light_sources, model_matrix);
+  InternalDraw(true, camera_ptr, light_sources,
+               std::vector<glm::mat4>{model_matrix}, false);
+}
+
+void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
+                 const std::vector<glm::mat4> &model_matrices) {
+  InternalDraw(false, camera_ptr, light_sources, model_matrices, false);
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
                  mat4 model_matrix) {
-  InternalDraw(false, camera_ptr, light_sources, model_matrix);
+  InternalDraw(false, camera_ptr, light_sources,
+               std::vector<glm::mat4>{model_matrix}, false);
 }
 
 void Model::InternalDraw(bool animated, Camera *camera_ptr,
-                         LightSources *light_sources, glm::mat4 model_matrix) {
+                         LightSources *light_sources,
+                         const std::vector<glm::mat4> &model_matrices,
+                         bool sort_meshes) {
   shader_ptr_->Use();
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
-  shader_ptr_->SetUniform<mat4>("uModelMatrix", model_matrix);
   shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
-  std::vector<std::pair<int, glm::vec3>> order;
-  order.reserve(mesh_ptrs_.size());
-  for (int i = 0; i < mesh_ptrs_.size(); i++)
-    if (mesh_ptrs_[i] != nullptr) {
-      glm::vec3 pos =
-          camera_ptr->view_matrix() * model_matrix *
-          vec4(mesh_ptrs_[i]->center(animated ? &bone_matrices_[0] : nullptr),
-               1);
-      order.emplace_back(i, pos);
+  auto draw_mesh = [&](Mesh *mesh_ptr, Shader *shader_ptr) {
+    glBindVertexArray(mesh_ptr->vao());
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, model_matrices.size() * sizeof(glm::mat4),
+                 model_matrices.data(), GL_DYNAMIC_DRAW);
+    for (int i = 0; i < 4; i++) {
+      uint32_t location = 9 + i;
+      glEnableVertexAttribArray(location);
+      glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+                            (void *)(i * sizeof(glm::vec4)));
+      glVertexAttribDivisor(location, 1);
     }
-  std::sort(order.begin(), order.end(), [](const auto &x, const auto &y) {
-    return x.second.z < y.second.z;
-  });
 
-  for (int i = 0; i < order.size(); i++) {
-    shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
-    mesh_ptrs_[order[i].first]->Draw(shader_ptr_.get());
+    mesh_ptr->Draw(shader_ptr, model_matrices.size());
+  };
+
+  if (sort_meshes) {
+    // sort meshes does not fit well to instancing
+    std::vector<std::pair<int, glm::vec3>> order;
+    order.reserve(mesh_ptrs_.size());
+    for (int i = 0; i < mesh_ptrs_.size(); i++)
+      if (mesh_ptrs_[i] != nullptr) {
+        glm::vec3 pos =
+            camera_ptr->view_matrix() * model_matrices[0] *
+            vec4(mesh_ptrs_[i]->center(animated ? &bone_matrices_[0] : nullptr),
+                 1);
+        order.emplace_back(i, pos);
+      }
+    std::sort(order.begin(), order.end(), [](const auto &x, const auto &y) {
+      return x.second.z < y.second.z;
+    });
+
+    for (int i = 0; i < order.size(); i++) {
+      shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
+      draw_mesh(mesh_ptrs_[order[i].first].get(), shader_ptr_.get());
+    }
+  } else {
+    for (int i = 0; i < mesh_ptrs_.size(); i++) {
+      if (mesh_ptrs_[i] == nullptr) continue;
+      shader_ptr_->SetUniform<int32_t>("uAnimated", animated);
+      draw_mesh(mesh_ptrs_[i].get(), shader_ptr_.get());
+    }
   }
 }
 
@@ -272,13 +328,13 @@ layout (location = 5) in ivec4 aBoneIDs2;
 layout (location = 6) in vec4 aBoneWeights0;
 layout (location = 7) in vec4 aBoneWeights1;
 layout (location = 8) in vec4 aBoneWeights2;
+layout (location = 9) in mat4 aModelMatrix;
 
 out vec3 vPosition;
 out vec2 vTexCoord;
 out vec3 vNormal;
 
 uniform bool uAnimated;
-uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uBoneMatrices[MAX_BONES];
@@ -308,10 +364,10 @@ void main() {
     } else {
       transform = uTransform;
     }
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * transform * vec4(aPosition, 1);
-    vPosition = vec3(uModelMatrix * transform * vec4(aPosition, 1));
+    gl_Position = uProjectionMatrix * uViewMatrix * aModelMatrix * transform * vec4(aPosition, 1);
+    vPosition = vec3(aModelMatrix * transform * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
-    vNormal = vec3(uModelMatrix * transform * vec4(aNormal, 0));
+    vNormal = vec3(aModelMatrix * transform * vec4(aNormal, 0));
 }
 )";
 

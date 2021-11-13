@@ -16,7 +16,6 @@ class SimpleSquareTerrain {
   uint32_t vao_, vbo_, ebo_, indices_size_, texture_id_;
   std::unique_ptr<Shader> shader_;
 
-  double get_height(double x, double y);
   glm::vec3 get_normal(double x, double y);
 
   static const std::string kVsSource, kFsSource;
@@ -24,5 +23,8 @@ class SimpleSquareTerrain {
  public:
   SimpleSquareTerrain(int size, double length, const std::string &texture_path);
 
-  void Draw(Camera *camera_ptr, LightSources *light_sources);
+  double get_height(double x, double y);
+
+  void Draw(Camera *camera_ptr, LightSources *light_sources,
+            glm::mat4 model_matrix);
 };

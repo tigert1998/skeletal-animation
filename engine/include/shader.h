@@ -9,12 +9,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
+
 class Shader {
  public:
-  enum { SRC, PATH };
-
-  Shader() = delete;
-  Shader(uint32_t type, const std::string &vs, const std::string &fs);
+  Shader(const std::string &vs, const std::string &fs);
+  Shader(const std::vector<std::pair<uint32_t, std::string>> &pairs);
   void Use() const;
   template <typename T>
   void SetUniform(const std::string &identifier, const T &) const;
@@ -24,7 +24,7 @@ class Shader {
  private:
   static uint32_t Compile(uint32_t type, const std::string &source,
                           const std::string &path);
-  static uint32_t Link(uint32_t vs_id, uint32_t fs_id);
+  static uint32_t Link(const std::vector<uint32_t> &ids);
 
-  uint32_t id;
+  uint32_t id_;
 };

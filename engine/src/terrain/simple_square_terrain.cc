@@ -72,15 +72,15 @@ SimpleSquareTerrain::SimpleSquareTerrain(int size, double length,
     : size_(size), length_(length), ratio_(0.25) {
   // size * size squares
   perlin_noise_.reset(new PerlinNoise(1024, 10086));
-  shader_.reset(new Shader(Shader::SRC, kVsSource, kFsSource));
+  shader_.reset(new Shader(kVsSource, kFsSource));
   texture_id_ = TextureManager::LoadTexture(texture_path, GL_REPEAT);
 
   std::vector<Vertex<0>> vertices;
-  vertices.reserve((size + 1) * (size + 1));
-  for (int i = 0; i <= size; i++)
-    for (int j = 0; j <= size; j++) {
-      double x = 1.0 * i / size;
-      double z = 1.0 * j / size;
+  vertices.reserve((size_ + 1) * (size_ + 1));
+  for (int i = 0; i <= size_; i++)
+    for (int j = 0; j <= size_; j++) {
+      double x = 1.0 * i / size_;
+      double z = 1.0 * j / size_;
       double y = get_height(x * length_, z * length_);
       auto normal = get_normal(x * length_, z * length_);
       Vertex<0> vertex;
@@ -144,14 +144,14 @@ glm::vec3 SimpleSquareTerrain::get_normal(double x, double y) {
   return glm::normalize(glm::vec3(-vec.x * ratio_, 1, -vec.y * ratio_));
 }
 
-void SimpleSquareTerrain::Draw(Camera *camera_ptr,
-                               LightSources *light_sources) {
+void SimpleSquareTerrain::Draw(Camera *camera_ptr, LightSources *light_sources,
+                               glm::mat4 model_matrix) {
   shader_->Use();
   light_sources->Set(shader_.get());
   if (light_sources != nullptr) {
     light_sources->Set(shader_.get());
   }
-  shader_->SetUniform<glm::mat4>("uModelMatrix", glm::mat4(1));
+  shader_->SetUniform<glm::mat4>("uModelMatrix", model_matrix);
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera_ptr->projection_matrix());
