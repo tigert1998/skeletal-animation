@@ -88,7 +88,8 @@ void Water::StepSimulation(double delta_time) {
   u_ = buf_;
 }
 
-void Water::Draw(Camera *camera, LightSources *light_sources) {
+void Water::Draw(Camera *camera, LightSources *light_sources,
+                 glm::mat4 model_matrix) {
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
       float x = height_length_ * i / height_;
@@ -116,7 +117,7 @@ void Water::Draw(Camera *camera, LightSources *light_sources) {
                         (void *)offsetof(VertexType, normal));
 
   shader_->Use();
-  shader_->SetUniform<glm::mat4>("uModelMatrix", glm::mat4(1));
+  shader_->SetUniform<glm::mat4>("uModelMatrix", model_matrix);
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera->projection_matrix());
@@ -142,7 +143,7 @@ out vec3 vNormal;
 void main() {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1);
     vPosition = vec3(uModelMatrix * vec4(aPosition, 1));
-    vNormal = aNormal;
+    vNormal = vec3(uModelMatrix * vec4(aNormal, 0));
 }
 )";
 

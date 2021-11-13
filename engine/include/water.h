@@ -29,5 +29,6 @@ class Water {
   Water(int height, int width, float height_length);
   ~Water();
   void StepSimulation(double delta_time);
-  void Draw(Camera *camera, LightSources *light_sources);
+  void Draw(Camera *camera, LightSources *light_sources,
+            glm::mat4 model_matrix);
 };
