@@ -7,7 +7,7 @@ OpenGL 4.1 is used because 4.1 is the latest version MacOS supports.
 So this repository can stay cross-platform.
 The `USE_SYSTEM_ASSIMP` and `USE_SYSTEM_BULLET` flag decides whether the system library of `assimp` and `bullet3` is used.
 If not able to installed these two libraries in the system path,
-simplily remember to leave them turned off and let CMake build the libraries for you.
+simply remember to leave them turned off and let CMake build the libraries for you.
 
 ```
 git submodule update --init --recursive
