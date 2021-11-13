@@ -69,3 +69,18 @@ uint32_t TextureManager::LoadTexture(const std::string& path, uint32_t wrap) {
   stbi_image_free(image);
   return memory[path.c_str()] = texture;
 }
+
+uint32_t TextureManager::AllocateTexture(uint32_t height, uint32_t width,
+                                         uint32_t format) {
+  unsigned int texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
+               GL_UNSIGNED_BYTE, nullptr);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  return texture;
+}

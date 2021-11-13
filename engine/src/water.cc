@@ -4,9 +4,11 @@
 
 #include <glm/glm.hpp>
 
+#include "texture_manager.h"
 #include "vertex.h"
 
-Water::Water(int height, int width, float height_length)
+Water::Water(int height, int width, float height_length, int tex_height,
+             int tex_width)
     : height_(height),
       width_(width),
       u_((height + 1) * (width + 1)),
@@ -20,6 +22,20 @@ Water::Water(int height, int width, float height_length)
   glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);
   glGenBuffers(1, &ebo_);
+  glGenFramebuffers(1, &reflection_fbo_);
+  glGenFramebuffers(1, &refraction_fbo_);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
+  reflection_tex_id_ =
+      TextureManager::AllocateTexture(tex_height, tex_width, GL_RGB);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         reflection_tex_id_, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
+  refraction_tex_id_ =
+      TextureManager::AllocateTexture(tex_height, tex_width, GL_RGB);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         refraction_tex_id_, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   std::vector<uint32_t> indices;
   for (int i = 0; i < height_; i++)
@@ -56,6 +72,10 @@ Water::~Water() {
   glDeleteVertexArrays(1, &vao_);
   glDeleteBuffers(1, &vbo_);
   glDeleteBuffers(1, &ebo_);
+  glDeleteFramebuffers(1, &reflection_fbo_);
+  glDeleteFramebuffers(1, &refraction_fbo_);
+  glDeleteTextures(1, &reflection_tex_id_);
+  glDeleteTextures(1, &refraction_tex_id_);
 }
 
 int Water::Index(int x, int y) { return x * (width_ + 1) + y; }
@@ -89,6 +109,7 @@ void Water::StepSimulation(double delta_time) {
 }
 
 void Water::Draw(Camera *camera, LightSources *light_sources,
+                 const std::function<void(Camera *)> &render,
                  glm::mat4 model_matrix) {
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
