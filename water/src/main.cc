@@ -118,7 +118,7 @@ void Init() {
   camera_ptr->set_front(normalize(vec3(-1, -0.4, -1)));
 
   wall.reset(new Model("resources/floor/source/floor.obj"));
-  water.reset(new Water(100, 100, kLength));
+  water.reset(new Water(100, 100, kLength, height, width));
 
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
@@ -153,6 +153,20 @@ void Init() {
   ImGuiInit();
 }
 
+void Render(Camera *camera) {
+  skybox_ptr->Draw(camera);
+
+  {
+    mat4 first = glm::scale(mat4(1), vec3(kLength));
+    mat4 move_up = glm::translate(mat4(1), vec3(0, 1, 0));
+    mat4 second =
+        first * move_up * glm::rotate(glm::pi<float>() / 2, vec3(1, 0, 0));
+    mat4 third =
+        first * move_up * glm::rotate(-glm::pi<float>() / 2, vec3(0, 0, 1));
+    wall->Draw(camera, light_sources_ptr.get(), {first, second, third});
+  }
+}
+
 int main(int argc, char *argv[]) {
   ::google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
@@ -172,20 +186,9 @@ int main(int argc, char *argv[]) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_ptr->Draw(camera_ptr.get());
-
-    {
-      mat4 first = glm::scale(mat4(1), vec3(kLength));
-      mat4 move_up = glm::translate(mat4(1), vec3(0, 1, 0));
-      mat4 second =
-          first * move_up * glm::rotate(glm::pi<float>() / 2, vec3(1, 0, 0));
-      mat4 third =
-          first * move_up * glm::rotate(-glm::pi<float>() / 2, vec3(0, 0, 1));
-      wall->Draw(camera_ptr.get(), light_sources_ptr.get(),
-                 {first, second, third});
-    }
+    Render(camera_ptr.get());
     water->StepSimulation(delta_time);
-    water->Draw(camera_ptr.get(), light_sources_ptr.get(),
+    water->Draw(camera_ptr.get(), light_sources_ptr.get(), Render,
                 glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
 
     ImGui_ImplGlfw_NewFrame();
