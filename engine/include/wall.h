@@ -14,14 +14,17 @@
 
 #include "camera.h"
 #include "shader.h"
+#include "vertex.h"
 
 class Wall {
  private:
+  using VertexType = Vertex<0>;
+
   uint32_t vao_, vbo_;
   std::shared_ptr<Shader> shader_ptr_;
 
  public:
   Wall();
   ~Wall();
-  void Draw(std::weak_ptr<Camera> camera_ptr) const;
+  void Draw(Camera *camera, glm::mat4 model_matrix) const;
 };

@@ -16,7 +16,7 @@ class Water {
 
   std::vector<float> u_, v_, buf_;
   int height_, width_, indices_size_;
-  float length_;
+  float height_length_, width_length_;
   uint32_t vao_, vbo_, ebo_;
   std::unique_ptr<Shader> shader_;
 
@@ -26,7 +26,7 @@ class Water {
   float GetU(int x, int y);
 
  public:
-  Water(int height, int width, float length);
+  Water(int height, int width, float height_length);
   ~Water();
   void StepSimulation(double delta_time);
   void Draw(Camera *camera, LightSources *light_sources);

@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <glad/glad.h>
+#include <glog/logging.h>
+
 #include <cctype>
 #include <vector>
 
@@ -41,4 +44,27 @@ std::string SnakeToPascal(const std::string &name) {
     }
   }
   return ans;
+}
+
+void CheckOpenGLError() {
+  auto err = glGetError();
+
+  if (err != GL_NO_ERROR) {
+    std::string err_str;
+    switch (err) {
+      case GL_INVALID_ENUM:
+        err_str = "GL_INVALID_ENUM";
+      case GL_INVALID_VALUE:
+        err_str = "GL_INVALID_VALUE";
+      case GL_INVALID_OPERATION:
+        err_str = "GL_INVALID_OPERATION";
+      case GL_OUT_OF_MEMORY:
+        err_str = "GL_OUT_OF_MEMORY";
+      case GL_INVALID_FRAMEBUFFER_OPERATION:
+        err_str = "GL_INVALID_FRAMEBUFFER_OPERATION";
+      default:
+        err_str = std::to_string(err);
+    }
+    LOG(FATAL) << err_str;
+  }
 }

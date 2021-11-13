@@ -16,3 +16,8 @@ file(GLOB_RECURSE sample_game_srcs "sample-game/src/*.cc")
 add_executable(sample-game "${sample_game_srcs}")
 target_include_directories(sample-game PRIVATE "sample-game/include")
 target_link_libraries(sample-game engine glog::glog bullet)
+
+file(GLOB_RECURSE water_srcs "water/src/*.cc")
+add_executable(water "${water_srcs}")
+target_include_directories(water PRIVATE "water/include")
+target_link_libraries(water engine glog::glog)

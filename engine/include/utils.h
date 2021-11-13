@@ -18,3 +18,5 @@ std::string BaseName(const std::string &path);
 std::string ParentPath(const std::string &path);
 
 std::string SnakeToPascal(const std::string &name);
+
+void CheckOpenGLError();

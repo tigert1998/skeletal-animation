@@ -6,13 +6,14 @@
 
 #include "vertex.h"
 
-Water::Water(int height, int width, float length)
+Water::Water(int height, int width, float height_length)
     : height_(height),
       width_(width),
       u_((height + 1) * (width + 1)),
       v_((height + 1) * (width + 1)),
       buf_((height + 1) * (width + 1)),
-      length_(length),
+      height_length_(height_length),
+      width_length_(width_ * height_length / height_),
       vertices_((height + 1) * (width + 1)) {
   shader_.reset(new Shader(kVsSource, kFsSource));
 
@@ -90,12 +91,14 @@ void Water::StepSimulation(double delta_time) {
 void Water::Draw(Camera *camera, LightSources *light_sources) {
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
-      float x = length_ * i / height_;
+      float x = height_length_ * i / height_;
       float y = GetU(i, j);
-      float z = length_ * j / width_;
+      float z = width_length_ * j / width_;
       auto position = glm::vec3(x, y, z);
-      float dydx = (GetU(i + 1, j) - GetU(i - 1, j)) / 2 / (length_ / height_);
-      float dydz = (GetU(i, j + 1) - GetU(i, j - 1)) / 2 / (length_ / width_);
+      float dydx =
+          (GetU(i + 1, j) - GetU(i - 1, j)) / 2 / (height_length_ / height_);
+      float dydz =
+          (GetU(i, j + 1) - GetU(i, j - 1)) / 2 / (width_length_ / width_);
       auto normal = glm::normalize(glm::vec3(-dydx, 1, -dydz));
       vertices_[Index(i, j)] = VertexType{position, normal};
     }
