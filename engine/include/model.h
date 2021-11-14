@@ -31,9 +31,10 @@ class Model {
   void Draw(Camera *camera_ptr, LightSources *light_sources,
             glm::mat4 model_matrix);
   void Draw(Camera *camera_ptr, LightSources *light_sources,
-            const std::vector<glm::mat4> &model_matrices);
+            const std::vector<glm::mat4> &model_matrices, glm::vec4 clip_plane);
   void Draw(uint32_t animation_id, double time, Camera *camera_ptr,
-            LightSources *light_sources, glm::mat4 model_matrix);
+            LightSources *light_sources, glm::mat4 model_matrix,
+            glm::vec4 clip_plane);
   int NumAnimations() const;
   void set_default_shading(bool default_shading);
   inline bool default_shading() { return default_shading_; }
@@ -69,7 +70,7 @@ class Model {
   void InternalDraw(bool animated, Camera *camera_ptr,
                     LightSources *light_sources,
                     const std::vector<glm::mat4> &model_matrices,
-                    bool sort_meshes);
+                    glm::vec4 clip_plane, bool sort_meshes);
 
   static const std::string kVsSource;
   static const std::string kFsSource;

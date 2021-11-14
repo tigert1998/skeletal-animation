@@ -127,7 +127,7 @@ void Water::StepSimulation(double delta_time) {
 }
 
 void Water::Draw(Camera *camera, LightSources *light_sources,
-                 const std::function<void(Camera *)> &render,
+                 const std::function<void(Camera *, glm::vec4)> &render,
                  glm::mat4 model_matrix) {
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
@@ -166,22 +166,30 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
 
   glBindVertexArray(0);
 
-  glViewport(0, 0, tex_width_, tex_height_);
-  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
   auto position = camera->position();
   auto front = camera->front();
+
+  glViewport(0, 0, tex_width_, tex_height_);
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
   // the normal of the water surface must be (0, 1, 0)
-  {
+  auto get_height = [](glm::mat4 model_matrix) -> float {
     auto vec4 = model_matrix * glm::vec4(0, 0, 0, 1);
-    auto height = (vec4 / vec4.w).y;
-    camera->set_position(
-        glm::vec3(position.x, 2 * height - position.y, position.z));
-  }
+    return (vec4 / vec4.w).y;
+  };
+
+  float height = get_height(model_matrix);
+  camera->set_position(
+      glm::vec3(position.x, 2 * height - position.y, position.z));
+
   camera->set_beta(-camera->beta());
-  render(camera);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  render(camera, glm::vec4(0, 1, 0, -height));
+
   camera->set_position(position);
   camera->set_front(front);
+  glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
+  render(camera, glm::vec4(0, -1, 0, height));
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 std::string Water::kVsSource = R"(

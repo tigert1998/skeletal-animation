@@ -34,7 +34,7 @@ class Water {
   ~Water();
   void StepSimulation(double delta_time);
   void Draw(Camera *camera, LightSources *light_sources,
-            const std::function<void(Camera *)> &render,
+            const std::function<void(Camera *, glm::vec4)> &render,
             glm::mat4 model_matrix);
 
   inline uint32_t reflection_tex_id() { return reflection_tex_id_; }

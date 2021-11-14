@@ -231,33 +231,37 @@ void Model::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
 }
 
 void Model::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
-                 LightSources *light_sources, mat4 model_matrix) {
+                 LightSources *light_sources, mat4 model_matrix,
+                 vec4 clip_plane) {
   RecursivelyUpdateBoneMatrices(
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   InternalDraw(true, camera_ptr, light_sources,
-               std::vector<glm::mat4>{model_matrix}, false);
+               std::vector<glm::mat4>{model_matrix}, clip_plane, false);
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
-                 const std::vector<glm::mat4> &model_matrices) {
-  InternalDraw(false, camera_ptr, light_sources, model_matrices, false);
+                 const std::vector<glm::mat4> &model_matrices,
+                 vec4 clip_plane) {
+  InternalDraw(false, camera_ptr, light_sources, model_matrices, clip_plane,
+               false);
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
                  mat4 model_matrix) {
   InternalDraw(false, camera_ptr, light_sources,
-               std::vector<glm::mat4>{model_matrix}, false);
+               std::vector<glm::mat4>{model_matrix}, glm::vec4(0), false);
 }
 
 void Model::InternalDraw(bool animated, Camera *camera_ptr,
                          LightSources *light_sources,
                          const std::vector<glm::mat4> &model_matrices,
-                         bool sort_meshes) {
+                         glm::vec4 clip_plane, bool sort_meshes) {
   shader_ptr_->Use();
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
+  shader_ptr_->SetUniform<vec4>("uClipPlane", clip_plane);
   shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
@@ -339,6 +343,7 @@ uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uBoneMatrices[MAX_BONES];
 uniform mat4 uTransform;
+uniform vec4 uClipPlane;
 
 mat4 CalcBoneMatrix() {
     mat4 boneMatrix = mat4(0);
@@ -368,6 +373,7 @@ void main() {
     vPosition = vec3(aModelMatrix * transform * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
     vNormal = vec3(aModelMatrix * transform * vec4(aNormal, 0));
+    gl_ClipDistance[0] = dot(vec4(vPosition, 1), uClipPlane);
 }
 )";
 
