@@ -194,8 +194,8 @@ int main(int argc, char *argv[]) {
                 glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
 
     glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
-    debug_quad->Draw(water->reflection_tex_id(), vec4(-1, 0.5, -0.5, 1));
-    debug_quad->Draw(water->refraction_tex_id(), vec4(-0.5, 0.5, 0, 1));
+    // debug_quad->Draw(water->reflection_tex_id(), vec4(-1, 0.5, -0.5, 1));
+    // debug_quad->Draw(water->refraction_tex_id(), vec4(-0.5, 0.5, 0, 1));
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();

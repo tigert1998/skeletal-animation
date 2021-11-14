@@ -129,6 +129,36 @@ void Water::StepSimulation(double delta_time) {
 void Water::Draw(Camera *camera, LightSources *light_sources,
                  const std::function<void(Camera *, glm::vec4)> &render,
                  glm::mat4 model_matrix) {
+  int viewport_args[4];
+  glGetIntegerv(GL_VIEWPORT, viewport_args);
+
+  auto position = camera->position();
+  auto front = camera->front();
+
+  glViewport(0, 0, tex_width_, tex_height_);
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
+  // the normal of the water surface must be (0, 1, 0)
+  auto get_height = [](glm::mat4 model_matrix) -> float {
+    auto vec4 = model_matrix * glm::vec4(0, 0, 0, 1);
+    return (vec4 / vec4.w).y;
+  };
+
+  float height = get_height(model_matrix);
+  camera->set_position(
+      glm::vec3(position.x, 2 * height - position.y, position.z));
+
+  camera->set_beta(-camera->beta());
+  render(camera, glm::vec4(0, 1, 0, -height));
+
+  camera->set_position(position);
+  camera->set_front(front);
+  glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
+  render(camera, glm::vec4(0, -1, 0, height));
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  glViewport(viewport_args[0], viewport_args[1], viewport_args[2],
+             viewport_args[3]);
   for (int i = 0; i <= height_; i++)
     for (int j = 0; j <= width_; j++) {
       float x = height_length_ * i / height_;
@@ -160,36 +190,18 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera->projection_matrix());
-  light_sources->Set(shader_.get());
+  // light_sources->Set(shader_.get());
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, reflection_tex_id());
+  shader_->SetUniform<int32_t>("uReflectionTexture", 0);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, refraction_tex_id());
+  shader_->SetUniform<int32_t>("uRefractionTexture", 1);
 
   glDrawElements(GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT, nullptr);
 
   glBindVertexArray(0);
-
-  auto position = camera->position();
-  auto front = camera->front();
-
-  glViewport(0, 0, tex_width_, tex_height_);
-  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
-  // the normal of the water surface must be (0, 1, 0)
-  auto get_height = [](glm::mat4 model_matrix) -> float {
-    auto vec4 = model_matrix * glm::vec4(0, 0, 0, 1);
-    return (vec4 / vec4.w).y;
-  };
-
-  float height = get_height(model_matrix);
-  camera->set_position(
-      glm::vec3(position.x, 2 * height - position.y, position.z));
-
-  camera->set_beta(-camera->beta());
-  render(camera, glm::vec4(0, 1, 0, -height));
-
-  camera->set_position(position);
-  camera->set_front(front);
-  glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
-  render(camera, glm::vec4(0, -1, 0, height));
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 std::string Water::kVsSource = R"(
@@ -203,9 +215,11 @@ uniform mat4 uProjectionMatrix;
 
 out vec3 vPosition;
 out vec3 vNormal;
+out vec4 vClipSpacePosition;
 
 void main() {
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1);
+    vClipSpacePosition = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1); 
+    gl_Position = vClipSpacePosition;
     vPosition = vec3(uModelMatrix * vec4(aPosition, 1));
     vNormal = vec3(uModelMatrix * vec4(aNormal, 0));
 }
@@ -216,8 +230,13 @@ std::string Water::kFsSource = R"(
 
 in vec3 vPosition;
 in vec3 vNormal;
+in vec4 vClipSpacePosition;
+
 )" + LightSources::kFsSource + R"(
 out vec4 fragColor;
+
+uniform sampler2D uReflectionTexture;
+uniform sampler2D uRefractionTexture;
 
 vec3 calcDiffuse(vec3 raw) {
     vec3 normal = normalize(vNormal);
@@ -233,12 +252,12 @@ vec3 calcDiffuse(vec3 raw) {
     return ans * raw;
 }
 
-vec3 defaultShading() {
-    vec3 color = vec3(0.4549f, 0.6470f, 0.7686f);
-    return color * 0.2 + calcDiffuse(color);
-}
-
 void main() {
-    fragColor = vec4(defaultShading(), 0.7);
+    vec2 texCoord = ((vClipSpacePosition.xy / vClipSpacePosition.w) + 1) * 0.5;
+    fragColor = mix(
+        texture(uReflectionTexture, vec2(texCoord.x, 1 - texCoord.y)),
+        texture(uRefractionTexture, texCoord),
+        0.5
+    );
 }
 )";
