@@ -1,18 +1,20 @@
 #include "water.h"
 
 #include <glad/glad.h>
+#include <glog/logging.h>
 
 #include <glm/glm.hpp>
 
 #include "texture_manager.h"
+#include "utils.h"
 #include "vertex.h"
 
 Water::Water(int height, int width, float height_length, int tex_height,
              int tex_width)
     : height_(height),
       width_(width),
-      tex_height_(tex_height),
-      tex_width_(tex_width),
+      tex_height_(tex_height * FB_HW_RATIO),
+      tex_width_(tex_width * FB_HW_RATIO),
       u_((height + 1) * (width + 1)),
       v_((height + 1) * (width + 1)),
       buf_((height + 1) * (width + 1)),
@@ -30,13 +32,25 @@ Water::Water(int height, int width, float height_length, int tex_height,
   glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
   reflection_tex_id_ =
       TextureManager::AllocateTexture(tex_height_, tex_width_, GL_RGB);
+  reflection_rbo_ = TextureManager::AllocateRenderBuffer(
+      tex_height_, tex_width_, GL_DEPTH24_STENCIL8);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          reflection_tex_id_, 0);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                            GL_RENDERBUFFER, reflection_rbo_);
+  CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
   glBindFramebuffer(GL_FRAMEBUFFER, refraction_fbo_);
   refraction_tex_id_ =
       TextureManager::AllocateTexture(tex_height_, tex_width_, GL_RGB);
+  refraction_rbo_ = TextureManager::AllocateRenderBuffer(
+      tex_height_, tex_width_, GL_DEPTH24_STENCIL8);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          refraction_tex_id_, 0);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                            GL_RENDERBUFFER, refraction_rbo_);
+  CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   std::vector<uint32_t> indices;
@@ -78,6 +92,8 @@ Water::~Water() {
   glDeleteFramebuffers(1, &refraction_fbo_);
   glDeleteTextures(1, &reflection_tex_id_);
   glDeleteTextures(1, &refraction_tex_id_);
+  glDeleteRenderbuffers(1, &reflection_rbo_);
+  glDeleteRenderbuffers(1, &refraction_rbo_);
 }
 
 int Water::Index(int x, int y) { return x * (width_ + 1) + y; }
@@ -150,11 +166,22 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
 
   glBindVertexArray(0);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
   glViewport(0, 0, tex_width_, tex_height_);
-
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
+  auto position = camera->position();
+  auto front = camera->front();
+  // the normal of the water surface must be (0, 1, 0)
+  {
+    auto vec4 = model_matrix * glm::vec4(0, 0, 0, 1);
+    auto height = (vec4 / vec4.w).y;
+    camera->set_position(
+        glm::vec3(position.x, 2 * height - position.y, position.z));
+  }
+  camera->set_beta(-camera->beta());
   render(camera);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  camera->set_position(position);
+  camera->set_front(front);
 }
 
 std::string Water::kVsSource = R"(

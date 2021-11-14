@@ -154,6 +154,7 @@ void Init() {
 }
 
 void Render(Camera *camera) {
+  glClear(GL_DEPTH_BUFFER_BIT);
   skybox_ptr->Draw(camera);
 
   {
@@ -183,7 +184,7 @@ int main(int argc, char *argv[]) {
     Keyboard::shared.Elapse(delta_time);
 
     glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
     Render(camera_ptr.get());

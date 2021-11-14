@@ -19,7 +19,8 @@ class Water {
   int height_, width_, indices_size_, tex_height_, tex_width_;
   float height_length_, width_length_;
   uint32_t vao_, vbo_, ebo_, reflection_fbo_, refraction_fbo_;
-  uint32_t reflection_tex_id_, refraction_tex_id_;
+  uint32_t reflection_tex_id_, refraction_tex_id_, reflection_rbo_,
+      refraction_rbo_;
   std::unique_ptr<Shader> shader_;
 
   std::vector<VertexType> vertices_;

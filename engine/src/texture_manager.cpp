@@ -72,7 +72,7 @@ uint32_t TextureManager::LoadTexture(const std::string& path, uint32_t wrap) {
 
 uint32_t TextureManager::AllocateTexture(uint32_t height, uint32_t width,
                                          uint32_t format) {
-  unsigned int texture;
+  uint32_t texture;
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -83,4 +83,13 @@ uint32_t TextureManager::AllocateTexture(uint32_t height, uint32_t width,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   return texture;
+}
+
+uint32_t TextureManager::AllocateRenderBuffer(uint32_t height, uint32_t width,
+                                              uint32_t format) {
+  uint32_t rbo;
+  glGenRenderbuffers(1, &rbo);
+  glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+  glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
+  return rbo;
 }
