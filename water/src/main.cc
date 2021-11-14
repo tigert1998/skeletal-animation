@@ -24,6 +24,7 @@
 #include "keyboard.h"
 #include "model.h"
 #include "skybox.h"
+#include "utils.h"
 #include "water.h"
 
 uint32_t width = 1000, height = 600;
@@ -49,10 +50,9 @@ void KeyCallback(GLFWwindow *window, int key, int, int action, int) {
 }
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height) {
-  ::width = width;
-  ::height = height;
-  camera_ptr->set_width_height_ratio(static_cast<double>(width) / height);
-  glViewport(0, 0, width, height);
+  ::width = width / FB_HW_RATIO;
+  ::height = height / FB_HW_RATIO;
+  camera_ptr->set_width_height_ratio(static_cast<double>(::width) / ::height);
 }
 
 void ImGuiInit() {
@@ -117,7 +117,7 @@ void Init() {
   camera_ptr->set_front(normalize(vec3(-1, -0.4, -1)));
 
   wall.reset(new Model("resources/floor/source/floor.obj"));
-  water.reset(new Water(100, 100, kLength, height, width));
+  water.reset(new Water(100, 100, kLength, 100, 100));
   debug_quad.reset(new DebugQuad());
 
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
@@ -185,11 +185,14 @@ int main(int argc, char *argv[]) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
     Render(camera_ptr.get());
+
     water->StepSimulation(delta_time);
     water->Draw(camera_ptr.get(), light_sources_ptr.get(), Render,
                 glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
 
+    glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
     debug_quad->Draw(water->reflection_tex_id(), vec4(-1, 0, 0, 1));
 
     ImGui_ImplGlfw_NewFrame();

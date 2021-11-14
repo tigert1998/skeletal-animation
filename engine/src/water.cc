@@ -5,15 +5,14 @@
 #include <glm/glm.hpp>
 
 #include "texture_manager.h"
-#include "utils.h"
 #include "vertex.h"
 
 Water::Water(int height, int width, float height_length, int tex_height,
              int tex_width)
     : height_(height),
       width_(width),
-      tex_height_(tex_height * FB_HW_RATIO),
-      tex_width_(tex_width * FB_HW_RATIO),
+      tex_height_(tex_height),
+      tex_width_(tex_width),
       u_((height + 1) * (width + 1)),
       v_((height + 1) * (width + 1)),
       buf_((height + 1) * (width + 1)),
@@ -152,6 +151,8 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
   glBindVertexArray(0);
 
   glBindFramebuffer(GL_FRAMEBUFFER, reflection_fbo_);
+  glViewport(0, 0, tex_width_, tex_height_);
+
   render(camera);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
