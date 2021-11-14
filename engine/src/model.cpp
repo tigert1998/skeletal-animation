@@ -266,6 +266,7 @@ void Model::InternalDraw(bool animated, Camera *camera_ptr,
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
+  shader_ptr_->SetUniform<vec3>("uCameraPosition", camera_ptr->position());
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
   auto draw_mesh = [&](Mesh *mesh_ptr, Shader *shader_ptr) {
@@ -382,6 +383,8 @@ const std::string Model::kFsSource = R"(
 
 const float zero = 0.00000001;
 
+uniform vec3 uCameraPosition;
+
 in vec3 vPosition;
 in vec2 vTexCoord;
 in vec3 vNormal;
@@ -401,23 +404,14 @@ uniform bool uDefaultShading;
 
 out vec4 fragColor;
 
-vec3 calcDiffuse(vec3 raw) {
-    vec3 normal = normalize(vNormal);
-    vec3 ans = vec3(0);
-    for (int i = 0; i < uDirectionalLightCount; i++) {
-        vec3 dir = normalize(-uDirectionalLights[i].dir);
-        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
-    }
-    for (int i = 0; i < uPointLightCount; i++) {
-        vec3 dir = normalize(uPointLights[i].pos - vPosition);
-        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
-    }
-    return ans * raw;
-}
-
 vec3 defaultShading() {
-    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
-    return color * 0.2 + calcDiffuse(color);
+    vec3 raw = vec3(0.9608f, 0.6784f, 0.2588f);
+    return calcPhoneLighting(
+        vec3(1), vec3(1), vec3(1),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        raw, raw, raw
+    );
 }
 
 void main() {
@@ -425,22 +419,35 @@ void main() {
         fragColor = vec4(defaultShading(), 1);
         return;
     }
-    vec3 color = vec3(0);
     float alpha = 1.0f;
+
+    vec3 ambientColor = vec3(0);
+    vec3 diffuseColor = vec3(0);
+    vec3 specularColor = vec3(0);
+
     if (uAmbientEnabled) {
-        color += texture(uAmbientTexture, vTexCoord).rgb;
+        ambientColor = texture(uAmbientTexture, vTexCoord).rgb;
     }
     if (uDiffuseEnabled) {
-        vec4 diffuseTexture = texture(uDiffuseTexture, vTexCoord); 
-        color += calcDiffuse(diffuseTexture.rgb);
-        alpha = diffuseTexture.a;
+        vec4 sampled = texture(uDiffuseTexture, vTexCoord);
+        diffuseColor = sampled.rgb;
+        alpha = sampled.a;
+    } else if (uBaseColorEnabled) {
+        vec4 sampled = texture(uBaseColorTexture, vTexCoord);
+        diffuseColor = sampled.rgb;
+        alpha = sampled.a;
     }
+    vec3 color = calcPhoneLighting(
+        vec3(1), vec3(1), vec3(1),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        ambientColor, diffuseColor, specularColor
+    );
+
     if (uEmissiveEnabled) {
         color += texture(uEmissiveTexture, vTexCoord).rgb;
     }
-    if (uBaseColorEnabled) {
-        color += texture(uBaseColorTexture, vTexCoord).rgb;
-    }
+
     fragColor = vec4(color, alpha);
 }
 )";

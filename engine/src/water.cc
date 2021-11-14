@@ -190,6 +190,7 @@ void Water::Draw(Camera *camera, LightSources *light_sources,
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera->projection_matrix());
+  shader_->SetUniform<glm::vec3>("uCameraPosition", camera->position());
   // light_sources->Set(shader_.get());
 
   glActiveTexture(GL_TEXTURE0);
@@ -237,27 +238,34 @@ out vec4 fragColor;
 
 uniform sampler2D uReflectionTexture;
 uniform sampler2D uRefractionTexture;
+uniform vec3 uCameraPosition;
 
-vec3 calcDiffuse(vec3 raw) {
-    vec3 normal = normalize(vNormal);
+vec3 calcLights() {
     vec3 ans = vec3(0);
+    vec3 viewDirection = uCameraPosition - vPosition;
     for (int i = 0; i < uDirectionalLightCount; i++) {
-        vec3 dir = normalize(-uDirectionalLights[i].dir);
-        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
+        vec3 specular = calcSpecular(-uDirectionalLights[i].dir, vNormal, viewDirection, 20, vec3(1));
+        ans += specular * uDirectionalLights[i].color;
     }
     for (int i = 0; i < uPointLightCount; i++) {
-        vec3 dir = normalize(uPointLights[i].pos - vPosition);
-        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
+        vec3 specular = calcSpecular(uPointLights[i].pos - vPosition, vNormal, viewDirection, 20, vec3(1));
+        ans += specular * uPointLights[i].color;
     }
-    return ans * raw;
+    return ans;
 }
 
 void main() {
     vec2 texCoord = ((vClipSpacePosition.xy / vClipSpacePosition.w) + 1) * 0.5;
+
+    float refractiveFactor = dot(normalize(uCameraPosition - vPosition), vNormal);
+    refractiveFactor = pow(refractiveFactor, 1);
+
     fragColor = mix(
         texture(uReflectionTexture, vec2(texCoord.x, 1 - texCoord.y)),
         texture(uRefractionTexture, texCoord),
-        0.5
+        refractiveFactor
     );
+    fragColor = mix(fragColor, vec4(0, 0.3, 0.5, 1), 0.2);
+    fragColor += vec4(calcLights(), 0);
 }
 )";

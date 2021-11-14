@@ -12,6 +12,16 @@ class Light {
   virtual ~Light(){};
 };
 
+class Ambient : public Light {
+ private:
+  glm::vec3 color_;
+
+ public:
+  Ambient(glm::vec3 color);
+  void Set(Shader *shader) override;
+  inline ~Ambient() override {}
+};
+
 class Directional : public Light {
  private:
   glm::vec3 dir_, color_;

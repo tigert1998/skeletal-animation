@@ -134,6 +134,7 @@ void Init() {
   light_sources_ptr = make_unique<LightSources>();
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
+  light_sources_ptr->Add(make_unique<Ambient>(vec3(0.2)));
 
   model_ptr = make_unique<Model>(
       "resources/sprite/source/sprite.fbx",

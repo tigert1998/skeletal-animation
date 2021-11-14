@@ -1,5 +1,15 @@
 #include "light_sources.h"
 
+Ambient::Ambient(glm::vec3 color) : color_(color) {}
+
+void Ambient::Set(Shader *shader) {
+  int32_t id = shader->GetUniform<int32_t>("uAmbientLightCount");
+  std::string var =
+      std::string("uAmbientLights") + "[" + std::to_string(id) + "]";
+  shader->SetUniform<glm::vec3>(var + ".color", color_);
+  shader->SetUniform<int32_t>("uAmbientLightCount", id + 1);
+}
+
 Directional::Directional(glm::vec3 dir, glm::vec3 color)
     : dir_(dir), color_(color) {}
 
@@ -28,7 +38,8 @@ void LightSources::Add(std::unique_ptr<Light> light) {
 }
 
 void LightSources::Set(Shader *shader) {
-  for (auto name : std::vector<std::string>{"Directional", "Point"}) {
+  for (auto name :
+       std::vector<std::string>{"Ambient", "Directional", "Point"}) {
     shader->SetUniform<int32_t>(std::string("u") + name + "LightCount", 0);
   }
 
@@ -38,6 +49,10 @@ void LightSources::Set(Shader *shader) {
 }
 
 std::string LightSources::kFsSource = R"(
+struct AmbientLight {
+    vec3 color;
+};
+
 struct DirectionalLight {
     vec3 dir;
     vec3 color;
@@ -52,8 +67,50 @@ struct PointLight {
     uniform int u##name##LightCount;      \
     uniform name##Light u##name##Lights[count];
 
+REG_LIGHT(Ambient, 1)
 REG_LIGHT(Directional, 1)
 REG_LIGHT(Point, 8)
 
 #undef REG_LIGHT
+
+vec3 calcAmbient(vec3 ka) {
+    return ka;
+}
+
+vec3 calcDiffuse(vec3 lightDirection, vec3 normal, vec3 kd) {
+    float diffuse = max(dot(normalize(lightDirection), normalize(normal)), 0);
+    return diffuse * kd;
+}
+
+vec3 calcSpecular(vec3 lightDirection, vec3 normal, vec3 viewDirection, float shininess, vec3 ks) {
+    float specular = dot(reflect(normalize(-lightDirection), normalize(normal)), normalize(viewDirection));
+    specular = max(specular, 0);
+    specular = pow(specular, shininess);
+    return specular * ks;
+}
+
+vec3 calcPhoneLighting(
+    vec3 ka, vec3 kd, vec3 ks,
+    vec3 normal, vec3 cameraPosition, vec3 position,
+    float shininess,
+    vec3 ambientColor, vec3 diffuseColor, vec3 specularColor 
+) {
+    vec3 color = vec3(0);
+    for (int i = 0; i < uAmbientLightCount; i++) {
+        color += calcAmbient(ka) * uAmbientLights[i].color * ambientColor;
+    }
+    for (int i = 0; i < uDirectionalLightCount; i++) {
+        color += calcDiffuse(-uDirectionalLights[i].dir, normal, kd) *
+            uDirectionalLights[i].color * diffuseColor;
+        color += calcSpecular(-uDirectionalLights[i].dir, normal, cameraPosition - position, shininess, ks) *
+            uDirectionalLights[i].color * specularColor;
+    }
+    for (int i = 0; i < uPointLightCount; i++) {
+        color += calcDiffuse(uPointLights[i].pos - position, normal, kd) *
+            uPointLights[i].color * diffuseColor;
+        color += calcSpecular(uPointLights[i].pos - position, normal, cameraPosition - position, shininess, ks) *
+            uPointLights[i].color * specularColor;
+    }
+    return color;
+}
 )";
