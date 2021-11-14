@@ -23,7 +23,6 @@
 #include "model.h"
 #include "skybox.h"
 #include "terrain/simple_square_terrain.h"
-#include "wall.h"
 
 uint32_t width = 1000, height = 600;
 
@@ -135,6 +134,7 @@ void Init() {
   light_sources_ptr = make_unique<LightSources>();
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
+  light_sources_ptr->Add(make_unique<Ambient>(vec3(0.2)));
 
   model_ptr = make_unique<Model>(
       "resources/sprite/source/sprite.fbx",
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
       model_ptr->Draw(camera_ptr.get(), light_sources_ptr.get(), mat4(1));
     } else {
       model_ptr->Draw(0, animation_time, camera_ptr.get(),
-                      light_sources_ptr.get(), mat4(1));
+                      light_sources_ptr.get(), mat4(1), vec4(0));
     }
 
     ImGui_ImplGlfw_NewFrame();

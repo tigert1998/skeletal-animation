@@ -231,37 +231,42 @@ void Model::RecursivelyUpdateBoneMatrices(int animation_id, aiNode *node,
 }
 
 void Model::Draw(uint32_t animation_id, double time, Camera *camera_ptr,
-                 LightSources *light_sources, mat4 model_matrix) {
+                 LightSources *light_sources, mat4 model_matrix,
+                 vec4 clip_plane) {
   RecursivelyUpdateBoneMatrices(
       animation_id, scene_->mRootNode, mat4(1),
       time * scene_->mAnimations[animation_id]->mTicksPerSecond);
   InternalDraw(true, camera_ptr, light_sources,
-               std::vector<glm::mat4>{model_matrix}, false);
+               std::vector<glm::mat4>{model_matrix}, clip_plane, false);
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
-                 const std::vector<glm::mat4> &model_matrices) {
-  InternalDraw(false, camera_ptr, light_sources, model_matrices, false);
+                 const std::vector<glm::mat4> &model_matrices,
+                 vec4 clip_plane) {
+  InternalDraw(false, camera_ptr, light_sources, model_matrices, clip_plane,
+               false);
 }
 
 void Model::Draw(Camera *camera_ptr, LightSources *light_sources,
                  mat4 model_matrix) {
   InternalDraw(false, camera_ptr, light_sources,
-               std::vector<glm::mat4>{model_matrix}, false);
+               std::vector<glm::mat4>{model_matrix}, glm::vec4(0), false);
 }
 
 void Model::InternalDraw(bool animated, Camera *camera_ptr,
                          LightSources *light_sources,
                          const std::vector<glm::mat4> &model_matrices,
-                         bool sort_meshes) {
+                         glm::vec4 clip_plane, bool sort_meshes) {
   shader_ptr_->Use();
   if (light_sources != nullptr) {
     light_sources->Set(shader_ptr_.get());
   }
+  shader_ptr_->SetUniform<vec4>("uClipPlane", clip_plane);
   shader_ptr_->SetUniform<mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_ptr_->SetUniform<mat4>("uProjectionMatrix",
                                 camera_ptr->projection_matrix());
   shader_ptr_->SetUniform<vector<mat4>>("uBoneMatrices", bone_matrices_);
+  shader_ptr_->SetUniform<vec3>("uCameraPosition", camera_ptr->position());
   shader_ptr_->SetUniform<int32_t>("uDefaultShading", default_shading_);
 
   auto draw_mesh = [&](Mesh *mesh_ptr, Shader *shader_ptr) {
@@ -339,6 +344,7 @@ uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uBoneMatrices[MAX_BONES];
 uniform mat4 uTransform;
+uniform vec4 uClipPlane;
 
 mat4 CalcBoneMatrix() {
     mat4 boneMatrix = mat4(0);
@@ -368,6 +374,7 @@ void main() {
     vPosition = vec3(aModelMatrix * transform * vec4(aPosition, 1));
     vTexCoord = aTexCoord;
     vNormal = vec3(aModelMatrix * transform * vec4(aNormal, 0));
+    gl_ClipDistance[0] = dot(vec4(vPosition, 1), uClipPlane);
 }
 )";
 
@@ -375,6 +382,8 @@ const std::string Model::kFsSource = R"(
 #version 410 core
 
 const float zero = 0.00000001;
+
+uniform vec3 uCameraPosition;
 
 in vec3 vPosition;
 in vec2 vTexCoord;
@@ -395,23 +404,14 @@ uniform bool uDefaultShading;
 
 out vec4 fragColor;
 
-vec3 calcDiffuse(vec3 raw) {
-    vec3 normal = normalize(vNormal);
-    vec3 ans = vec3(0);
-    for (int i = 0; i < uDirectionalLightCount; i++) {
-        vec3 dir = normalize(-uDirectionalLights[i].dir);
-        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
-    }
-    for (int i = 0; i < uPointLightCount; i++) {
-        vec3 dir = normalize(uPointLights[i].pos - vPosition);
-        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
-    }
-    return ans * raw;
-}
-
 vec3 defaultShading() {
-    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
-    return color * 0.2 + calcDiffuse(color);
+    vec3 raw = vec3(0.9608f, 0.6784f, 0.2588f);
+    return calcPhoneLighting(
+        vec3(1), vec3(1), vec3(1),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        raw, raw, raw
+    );
 }
 
 void main() {
@@ -419,22 +419,35 @@ void main() {
         fragColor = vec4(defaultShading(), 1);
         return;
     }
-    vec3 color = vec3(0);
     float alpha = 1.0f;
+
+    vec3 ambientColor = vec3(0);
+    vec3 diffuseColor = vec3(0);
+    vec3 specularColor = vec3(0);
+
     if (uAmbientEnabled) {
-        color += texture(uAmbientTexture, vTexCoord).rgb;
+        ambientColor = texture(uAmbientTexture, vTexCoord).rgb;
     }
     if (uDiffuseEnabled) {
-        vec4 diffuseTexture = texture(uDiffuseTexture, vTexCoord); 
-        color += calcDiffuse(diffuseTexture.rgb);
-        alpha = diffuseTexture.a;
+        vec4 sampled = texture(uDiffuseTexture, vTexCoord);
+        diffuseColor = sampled.rgb;
+        alpha = sampled.a;
+    } else if (uBaseColorEnabled) {
+        vec4 sampled = texture(uBaseColorTexture, vTexCoord);
+        diffuseColor = sampled.rgb;
+        alpha = sampled.a;
     }
+    vec3 color = calcPhoneLighting(
+        vec3(1), vec3(1), vec3(1),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        ambientColor, diffuseColor, specularColor
+    );
+
     if (uEmissiveEnabled) {
         color += texture(uEmissiveTexture, vTexCoord).rgb;
     }
-    if (uBaseColorEnabled) {
-        color += texture(uBaseColorTexture, vTexCoord).rgb;
-    }
+
     fragColor = vec4(color, alpha);
 }
 )";

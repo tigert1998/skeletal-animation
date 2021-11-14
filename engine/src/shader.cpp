@@ -78,6 +78,14 @@ void Shader::SetUniform<glm::vec3>(const std::string &identifier,
 }
 
 template <>
+void Shader::SetUniform<glm::vec4>(const std::string &identifier,
+                                   const glm::vec4 &value) const {
+  auto location = glGetUniformLocation(id_, identifier.c_str());
+  if (location < 0) throw ShaderSettingError(identifier);
+  glUniform4fv(location, 1, glm::value_ptr(value));
+}
+
+template <>
 void Shader::SetUniform<glm::mat4>(const std::string &identifier,
                                    const glm::mat4 &value) const {
   auto location = glGetUniformLocation(id_, identifier.c_str());

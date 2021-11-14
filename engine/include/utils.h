@@ -20,3 +20,9 @@ std::string ParentPath(const std::string &path);
 std::string SnakeToPascal(const std::string &name);
 
 void CheckOpenGLError();
+
+#ifdef __APPLE__
+#define FB_HW_RATIO (2)
+#else
+#define FB_HW_RATIO (1)
+#endif

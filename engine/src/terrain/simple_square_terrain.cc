@@ -39,31 +39,28 @@ in vec3 vNormal;
 )" + LightSources::kFsSource + R"(
 out vec4 fragColor;
 
+uniform vec3 uCameraPosition;
 uniform float uLength;
 uniform sampler2D uTerrainTexture;
 
-vec3 calcDiffuse(vec3 raw) {
-    vec3 normal = normalize(vNormal);
-    vec3 ans = vec3(0);
-    for (int i = 0; i < uDirectionalLightCount; i++) {
-        vec3 dir = normalize(-uDirectionalLights[i].dir);
-        ans += max(dot(normal, dir), 0.0) * uDirectionalLights[i].color;
-    }
-    for (int i = 0; i < uPointLightCount; i++) {
-        vec3 dir = normalize(uPointLights[i].pos - vPosition);
-        ans += max(dot(normal, dir), 0.0) * uPointLights[i].color;
-    }
-    return ans * raw;
-}
-
 vec3 defaultShading() {
-    vec3 color = vec3(0.9608f, 0.6784f, 0.2588f);
-    return color * 0.2 + calcDiffuse(color);
+    vec3 raw = vec3(0.9608f, 0.6784f, 0.2588f);
+    return calcPhoneLighting(
+        vec3(1), vec3(1), vec3(1),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        raw, raw, raw
+    );
 }
 
 void main() {
     vec3 raw = texture(uTerrainTexture, vTexCoord * uLength).rgb;
-    fragColor = vec4(calcDiffuse(raw) * 0.7 + raw * 0.3, 1);
+    fragColor = vec4(calcPhoneLighting(
+        vec3(0.2), vec3(0.8), vec3(0),
+        vNormal, uCameraPosition, vPosition,
+        20,
+        raw, raw, vec3(0) 
+    ), 1);
 }
 )";
 
@@ -155,6 +152,7 @@ void SimpleSquareTerrain::Draw(Camera *camera_ptr, LightSources *light_sources,
   shader_->SetUniform<glm::mat4>("uViewMatrix", camera_ptr->view_matrix());
   shader_->SetUniform<glm::mat4>("uProjectionMatrix",
                                  camera_ptr->projection_matrix());
+  shader_->SetUniform<glm::vec3>("uCameraPosition", camera_ptr->position());
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_id_);

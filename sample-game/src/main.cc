@@ -226,7 +226,8 @@ int main(int argc, char *argv[]) {
 
     skybox_ptr->Draw(camera_ptr.get());
 
-    tree->Draw(camera_ptr.get(), light_sources_ptr.get(), tree_model_matrices);
+    tree->Draw(camera_ptr.get(), light_sources_ptr.get(), tree_model_matrices,
+               vec4(0));
     tank->Draw(camera_ptr.get(), light_sources_ptr.get());
 
     terrain->Draw(camera_ptr.get(), light_sources_ptr.get());

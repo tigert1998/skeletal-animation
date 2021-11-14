@@ -20,4 +20,7 @@ class TextureManager {
 
   static uint32_t AllocateTexture(uint32_t height, uint32_t width,
                                   uint32_t format);
+
+  static uint32_t AllocateRenderBuffer(uint32_t height, uint32_t width,
+                                       uint32_t format);
 };

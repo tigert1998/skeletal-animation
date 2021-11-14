@@ -20,9 +20,11 @@
 #include <iostream>
 #include <memory>
 
+#include "debug_quad.h"
 #include "keyboard.h"
 #include "model.h"
 #include "skybox.h"
+#include "utils.h"
 #include "water.h"
 
 uint32_t width = 1000, height = 600;
@@ -36,9 +38,7 @@ std::unique_ptr<LightSources> light_sources_ptr;
 std::unique_ptr<Skybox> skybox_ptr;
 std::unique_ptr<Water> water;
 std::unique_ptr<Model> wall;
-
-double animation_time = 0;
-int animation_id = -1;
+std::unique_ptr<DebugQuad> debug_quad;
 
 GLFWwindow *window;
 
@@ -50,10 +50,9 @@ void KeyCallback(GLFWwindow *window, int key, int, int action, int) {
 }
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height) {
-  ::width = width;
-  ::height = height;
-  camera_ptr->set_width_height_ratio(static_cast<double>(width) / height);
-  glViewport(0, 0, width, height);
+  ::width = width / FB_HW_RATIO;
+  ::height = height / FB_HW_RATIO;
+  camera_ptr->set_width_height_ratio(static_cast<double>(::width) / ::height);
 }
 
 void ImGuiInit() {
@@ -107,6 +106,7 @@ void Init() {
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
+  glEnable(GL_CLIP_DISTANCE0);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   light_sources_ptr = make_unique<LightSources>();
@@ -118,7 +118,8 @@ void Init() {
   camera_ptr->set_front(normalize(vec3(-1, -0.4, -1)));
 
   wall.reset(new Model("resources/floor/source/floor.obj"));
-  water.reset(new Water(100, 100, kLength, height, width));
+  water.reset(new Water(100, 100, kLength, height / 2, width / 2));
+  debug_quad.reset(new DebugQuad());
 
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
   Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
@@ -153,7 +154,9 @@ void Init() {
   ImGuiInit();
 }
 
-void Render(Camera *camera) {
+void Render(Camera *camera, glm::vec4 clip_plane) {
+  glClearColor(0, 0, 0, 1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   skybox_ptr->Draw(camera);
 
   {
@@ -163,7 +166,8 @@ void Render(Camera *camera) {
         first * move_up * glm::rotate(glm::pi<float>() / 2, vec3(1, 0, 0));
     mat4 third =
         first * move_up * glm::rotate(-glm::pi<float>() / 2, vec3(0, 0, 1));
-    wall->Draw(camera, light_sources_ptr.get(), {first, second, third});
+    wall->Draw(camera, light_sources_ptr.get(), {first, second, third},
+               clip_plane);
   }
 }
 
@@ -178,18 +182,20 @@ int main(int argc, char *argv[]) {
     double current_time = glfwGetTime();
     double delta_time = current_time - last_time;
     last_time = current_time;
-    animation_time += delta_time;
 
     glfwPollEvents();
     Keyboard::shared.Elapse(delta_time);
 
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
+    Render(camera_ptr.get(), glm::vec4(0));
 
-    Render(camera_ptr.get());
     water->StepSimulation(delta_time);
     water->Draw(camera_ptr.get(), light_sources_ptr.get(), Render,
                 glm::translate(mat4(1), vec3(0, kLength * 0.618, 0)));
+
+    glViewport(0, 0, width * FB_HW_RATIO, height * FB_HW_RATIO);
+    // debug_quad->Draw(water->reflection_tex_id(), vec4(-1, 0.5, -0.5, 1));
+    // debug_quad->Draw(water->refraction_tex_id(), vec4(-0.5, 0.5, 0, 1));
 
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
