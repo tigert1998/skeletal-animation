@@ -22,7 +22,8 @@ void Directional::Set(Shader *shader) {
   shader->SetUniform<int32_t>("uDirectionalLightCount", id + 1);
 }
 
-Point::Point(glm::vec3 pos, glm::vec3 color) : pos_(pos), color_(color) {}
+Point::Point(glm::vec3 pos, glm::vec3 color, glm::vec3 attenuation)
+    : pos_(pos), color_(color), attenuation_(attenuation) {}
 
 void Point::Set(Shader *shader) {
   int32_t id = shader->GetUniform<int32_t>("uPointLightCount");
@@ -30,6 +31,7 @@ void Point::Set(Shader *shader) {
       std::string("uPointLights") + "[" + std::to_string(id) + "]";
   shader->SetUniform<glm::vec3>(var + ".pos", pos_);
   shader->SetUniform<glm::vec3>(var + ".color", color_);
+  shader->SetUniform<glm::vec3>(var + ".attenuation", attenuation_);
   shader->SetUniform<int32_t>("uPointLightCount", id + 1);
 }
 
@@ -61,6 +63,7 @@ struct DirectionalLight {
 struct PointLight {
     vec3 pos;
     vec3 color;
+    vec3 attenuation;
 };
 
 #define REG_LIGHT(name, count) \
@@ -106,10 +109,14 @@ vec3 calcPhoneLighting(
             uDirectionalLights[i].color * specularColor;
     }
     for (int i = 0; i < uPointLightCount; i++) {
+        vec3 attenuation = uPointLights[i].attenuation;
+        float dis = distance(uPointLights[i].pos, position);
+        vec3 pointLightColor = uPointLights[i].color /
+            (attenuation.x + attenuation.y * dis + attenuation.z * pow(dis, 2));
         color += calcDiffuse(uPointLights[i].pos - position, normal, kd) *
-            uPointLights[i].color * diffuseColor;
+            pointLightColor * diffuseColor;
         color += calcSpecular(uPointLights[i].pos - position, normal, cameraPosition - position, shininess, ks) *
-            uPointLights[i].color * specularColor;
+            pointLightColor * specularColor;
     }
     return color;
 }

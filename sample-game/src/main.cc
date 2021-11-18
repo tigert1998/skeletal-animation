@@ -114,7 +114,8 @@ void ImGuiWindow() {
 
 void InitWorld() {
   light_sources_ptr = make_unique<LightSources>();
-  light_sources_ptr->Add(make_unique<Point>(vec3(5, 100, 5), vec3(1, 1, 1)));
+  light_sources_ptr->Add(
+      make_unique<Point>(vec3(5, 100, 5), vec3(1, 1, 1), vec3(1, 0, 0)));
 
   tree = make_unique<Model>("resources/tree/source/tree.fbx",
                             std::vector<std::string>({"Sphere"}));

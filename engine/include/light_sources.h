@@ -34,10 +34,10 @@ class Directional : public Light {
 
 class Point : public Light {
  private:
-  glm::vec3 pos_, color_;
+  glm::vec3 pos_, color_, attenuation_;
 
  public:
-  explicit Point(glm::vec3 pos, glm::vec3 color);
+  explicit Point(glm::vec3 pos, glm::vec3 color, glm::vec3 attenuation);
   void Set(Shader *shader) override;
   inline ~Point() override {}
 };

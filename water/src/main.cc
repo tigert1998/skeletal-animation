@@ -111,7 +111,7 @@ void Init() {
 
   light_sources_ptr = make_unique<LightSources>();
   light_sources_ptr->Add(
-      make_unique<Point>(vec3(100, 100, 100), vec3(1, 1, 1)));
+      make_unique<Point>(vec3(100, 100, 100), vec3(1, 1, 1), vec3(1, 0, 0)));
 
   camera_ptr =
       make_unique<Camera>(vec3(10, 7, 10), static_cast<double>(width) / height);
