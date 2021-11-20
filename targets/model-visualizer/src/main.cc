@@ -19,8 +19,8 @@
 #include <iostream>
 #include <memory>
 
-#include "keyboard.h"
 #include "model.h"
+#include "mouse.h"
 #include "skybox.h"
 #include "terrain/simple_square_terrain.h"
 
@@ -39,8 +39,15 @@ int animation_id = -1;
 
 GLFWwindow *window;
 
+void MouseButtonCallback(GLFWwindow *window, int button, int action, int) {
+  Mouse::shared.Trigger(button, action);
+}
+
+void CursorPosCallback(GLFWwindow *window, double x, double y) {
+  Mouse::shared.Move(x, y);
+}
+
 void KeyCallback(GLFWwindow *window, int key, int, int action, int) {
-  Keyboard::shared.Trigger(key, action);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GL_TRUE);
   }
@@ -125,6 +132,32 @@ void Init() {
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   glfwSetKeyCallback(window, KeyCallback);
+  glfwSetMouseButtonCallback(window, MouseButtonCallback);
+  glfwSetCursorPosCallback(window, CursorPosCallback);
+
+  Mouse::shared.Register(
+      [](Mouse::MouseState state, double delta, double x, double y) {
+        static double lastx = 0, lasty = 0;
+        if (state[GLFW_MOUSE_BUTTON_LEFT]) {
+          double normalized_x = (x - lastx) / width;
+          double normalized_y = (y - lasty) / height;
+
+          auto position = camera_ptr->position();
+          double distance = glm::distance(position, glm::vec3(0));
+          double theta = atan2(-position.z, position.x) - normalized_x * 2;
+          double gamma = -camera_ptr->beta() + normalized_y;
+
+          position.x = distance * cos(theta) * cos(gamma);
+          position.z = -distance * sin(theta) * cos(gamma);
+          position.y = distance * sin(gamma);
+
+          camera_ptr->set_position(position);
+          camera_ptr->set_front(-camera_ptr->position());
+        }
+        lastx = x;
+        lasty = y;
+      });
+
   glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
   glEnable(GL_DEPTH_TEST);
@@ -134,7 +167,7 @@ void Init() {
   light_sources_ptr = make_unique<LightSources>();
   light_sources_ptr->Add(
       make_unique<Directional>(vec3(0, 0, -1), vec3(1, 1, 1)));
-  light_sources_ptr->Add(make_unique<Ambient>(vec3(0.2)));
+  light_sources_ptr->Add(make_unique<Ambient>(vec3(0.4)));
 
   model_ptr = make_unique<Model>(
       "resources/sprite/source/sprite.fbx",
@@ -142,35 +175,8 @@ void Init() {
           {"Plane001", "Plane002", "obj53002_LynM001", "objTwoHand13_SM"}));
   camera_ptr = make_unique<Camera>(vec3(0.5, 0.25, 1),
                                    static_cast<double>(width) / height);
+  camera_ptr->set_front(-camera_ptr->position());
   skybox_ptr = make_unique<Skybox>("resources/skyboxes/cloud", "png");
-  Keyboard::shared.Register([](Keyboard::KeyboardState state, double time) {
-    double move_ratio = 7;
-    if (state[GLFW_KEY_W] || state[GLFW_KEY_UP]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kForward, time * move_ratio);
-    }
-    if (state[GLFW_KEY_S] || state[GLFW_KEY_DOWN]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kBackward, time * move_ratio);
-    }
-    if (state[GLFW_KEY_A] || state[GLFW_KEY_LEFT]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kLeftward, time * move_ratio);
-    }
-    if (state[GLFW_KEY_D] || state[GLFW_KEY_RIGHT]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kRightward,
-                       time * move_ratio);
-    }
-    if (state[GLFW_KEY_J]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kDownward, time * move_ratio);
-    }
-    if (state[GLFW_KEY_K]) {
-      camera_ptr->Move(Camera::MoveDirectionType::kUpward, time * move_ratio);
-    }
-    if (state[GLFW_KEY_H]) {
-      camera_ptr->Rotate(-time, 0);
-    }
-    if (state[GLFW_KEY_L]) {
-      camera_ptr->Rotate(time, 0);
-    }
-  });
 
   ImGuiInit();
 }
@@ -189,7 +195,6 @@ int main(int argc, char *argv[]) {
     animation_time += delta_time;
 
     glfwPollEvents();
-    Keyboard::shared.Elapse(delta_time);
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
