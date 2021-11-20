@@ -47,6 +47,14 @@ void CursorPosCallback(GLFWwindow *window, double x, double y) {
   Mouse::shared.Move(x, y);
 }
 
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+  auto position = camera_ptr->position();
+  double distance = glm::distance(position, glm::vec3(0)) + yoffset * 0.2;
+  distance = std::max(distance, 0.1);
+  position = glm::normalize(position) * (float)distance;
+  camera_ptr->set_position(position);
+}
+
 void KeyCallback(GLFWwindow *window, int key, int, int action, int) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GL_TRUE);
@@ -134,6 +142,7 @@ void Init() {
   glfwSetKeyCallback(window, KeyCallback);
   glfwSetMouseButtonCallback(window, MouseButtonCallback);
   glfwSetCursorPosCallback(window, CursorPosCallback);
+  glfwSetScrollCallback(window, ScrollCallback);
 
   Mouse::shared.Register(
       [](Mouse::MouseState state, double delta, double x, double y) {

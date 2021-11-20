@@ -23,10 +23,7 @@ cmake \
 
 ## Model Visualizer
 This visualizer supports skeletal animation.
-Please navigate through the scene with `WASD` and `HJKL`.
-`WASD` help you move forward/leftward/backward/rightward.
-Press `H` or `L` to rotate counter-clockwise or clockwise.
-`JK` are for moving downward and moving upward. 
+Please navigate through the scene with mouse scrolling and dragging.
 Check the visualizer out!
 
 ```
