@@ -1,5 +1,7 @@
 # Tiger Rendering Engine
 
+**<ins>Check this out: [tiger-game-engine](https://github.com/tigert1998/tiger-game-engine)!</ins>**
+
 ## Build
 This repository follows the standard CMake building procedure.
 Before building, run `configure.py` to download the `glad` package.
